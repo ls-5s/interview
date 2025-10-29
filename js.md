@@ -263,6 +263,42 @@ console.log(original.age); // 输出 10 → 原始对象的基本类型属性不
 只复制第一层：无论原对象有多少层嵌套，浅拷贝仅处理最外层属性。
 基本类型独立：第一层的基本类型属性，新旧对象各自拥有独立的值，修改一方不影响另一方。
 引用类型共享：第一层的引用类型属性（如嵌套对象、数组），新旧对象共享同一份数据，修改一方会同步影响另一方。
+```js
+/**
+ * 手写浅拷贝函数（支持对象和数组）
+ * 核心：只拷贝表层属性，基本类型复制值，引用类型复制地址（不递归处理嵌套）
+ * @param {*} target - 要拷贝的目标（可以是对象、数组、基本类型等）
+ * @returns {*} 拷贝后的新值
+ */
+function shallowClone(target) {
+  // 1. 边界处理：非对象类型（基本类型、null）直接返回（无需拷贝）
+  if (typeof target !== 'object' || target === null) {
+    return target;
+  }
+
+  // 2. 根据目标类型创建对应容器（数组→新数组，对象→新对象）
+  const cloneTarget = Array.isArray(target) ? [] : {};
+
+  // 3. 遍历目标的表层属性，复制值（区分数组和对象的遍历逻辑）
+  if (Array.isArray(target)) {
+    // 数组：遍历索引，复制元素
+    for (let i = 0; i < target.length; i++) {
+      cloneTarget[i] = target[i];
+    }
+  } else {
+    // 对象：遍历自身可枚举属性（过滤原型链属性）
+    for (const key in target) {
+      // 只拷贝自身属性（避免复制原型链上的继承属性）
+      if (target.hasOwnProperty(key)) {
+        cloneTarget[key] = target[key];
+      }
+    }
+  }
+
+  // 4. 返回拷贝结果
+  return cloneTarget;
+}
+```
 
 =====================
 **深拷贝（Deep Copy)**
@@ -293,6 +329,7 @@ console.log(original.age); // 输出: 10
 ```
 =====================
 **深拷贝（Deep Copy）** 自己实现
+大部分主流场景
 ```js
 /**
  * 深拷贝函数：递归复制对象的所有层级（包括嵌套引用类型），确保新旧对象完全独立
@@ -456,3 +493,31 @@ console.log(alice.__proto__ === Person.prototype); // true
 作用：
 - __proto__ 是实例的 “指针”，用于实现实例的属性查找与继承。
 - prototype 是构造函数的 “指针”，用于实现构造函数创建的实例的属性查找与继承。
+================
+
+**constructor** 是原型对象（Prototype Object）上的一个默认属性，它的核心作用是指向该原型对象所关联的构造函数
+```js
+// 定义构造函数
+function Person(name) {
+  this.name = name;
+}
+// 构造函数的原型对象（Person.prototype）默认有 constructor 属性，指向 Person
+console.log(Person.prototype.constructor === Person); // true
+```
+
+=================================
+
+**总结**
+根据图片内容，提取出的信息如下：
+
+---
+
+**原型（prototype）与 `__proto__` 对比总结表**
+
+| 属性        | 存在于               | 用途                                         | 关系说明                                          |
+| ----------- | -------------------- | -------------------------------------------- | ------------------------------------------------- |
+| prototype   | 构造函数（Function） | 作为“蓝图”，定义所有实例共享的属性和方法。   | 实例的 `__proto__` 指向其构造函数的 `prototype`。 |
+| `__proto__` | 对象实例（Object）   | 作为“链接”，指向实例的原型对象，构成原型链。 |                                                   |
+
+---
+## this 的指向在不同场景下（普通函数、箭头函数、构造函数、bind/call/apply）有何不同？
