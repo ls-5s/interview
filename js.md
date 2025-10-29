@@ -601,8 +601,8 @@ const bikeInfo = car.showInfo.bind(bike, 2023);
 bikeInfo('绿色');
 // 输出: 这是一辆2023年的Giant，颜色：绿色
 ```
+## BigInt 的出现解决了什么问题？它和 Number 类型在使用上有什么注意事项？
 
-## BigInt 解决的问题  
 JavaScript 中 `Number` 类型基于 IEEE 754 标准，最大安全整数为 `2^53 - 1`（即 `9007199254740991`），超过该范围的整数无法被精确表示和计算（会出现精度丢失）。**BigInt 专门用于处理任意长度的大整数**，解决了大整数精确计算的问题，适用于密码学、区块链、大数据分析等需要高精度整数运算的场景。  
 
 
@@ -624,3 +624,174 @@ JavaScript 中 `Number` 类型基于 IEEE 754 标准，最大安全整数为 `2^
 5. **特殊场景限制**  
    - 无法直接用于 JSON 序列化（需手动转为字符串）；  
    - 部分内置 API（如 `Date` 构造函数、`RegExp` 等）不支持 BigInt 类型。
+
+## EventLoop 事件循环
+JavaScript 是单线程的（同一时间只能执行一段代码），如果所有代码都同步执行，遇到耗时操作（如网络请求、定时器）时，页面会 “卡死”（阻塞）。为了避免这种情况，JS 将任务分为同步任务和异步任务，通过 EventLoop 机制 来协调它们的执行顺序。
+
+**EventLoop** 是 JavaScript 运行时的一个机制，用于协调同步任务和异步任务的执行。它是避免单线程处理异步任务时阻塞页面的关键。
+
+同步任务 > 微任务（异步）> 宏任务（异步）
+
+以下是对常见宏任务、微任务的详细说明，包括它们的触发逻辑、在事件循环中的处理时机及具体示例，帮助理解它们在事件循环中的角色：
+
+**一、宏任务（Macro Task）** 
+宏任务是事件循环中“粒度较粗”的异步任务，每次事件循环只会从宏任务队列中取**一个**执行，执行完毕后会立即清空微任务队列，再进入下一轮循环。  
+
+
+**1. DOM 事件（浏览器环境）**  
+- **触发逻辑**：当用户操作DOM（如点击、滚动、输入）或DOM状态变化（如加载完成）时，浏览器会将事件回调函数放入宏任务队列。  
+- **处理时机**：同步代码执行完、微任务队列清空后，才会从宏任务队列中取出DOM事件回调执行。  
+- **示例**：  
+  ```javascript
+  console.log("同步任务"); // 同步执行
+  document.getElementById("btn").addEventListener("click", () => {
+    console.log("点击事件回调（宏任务）");
+  });
+  // 点击按钮后，回调会被放入宏任务队列，等待当前同步任务和微任务执行完后才触发
+  ```  
+
+
+**2. 网络请求（Ajax/Fetch，浏览器环境）**  
+- **触发逻辑**：当发起异步网络请求（如 `XMLHttpRequest` 或 `fetch`）时，JS引擎会将请求交给浏览器的网络线程处理，待请求完成（成功/失败）后，回调函数会被放入宏任务队列。  
+- **注意**：`fetch` 的 `then` 回调属于**微任务**（因为基于Promise），但“网络请求完成后将回调加入队列”这个动作本身是宏任务的调度逻辑。  
+- **示例**：  
+  ```javascript
+  console.log("同步开始");
+  fetch("https://api.example.com")
+    .then(res => res.json())
+    .then(data => console.log("请求结果（微任务）")); // then回调是微任务
+  // 网络请求完成后，会先触发宏任务调度，再将then回调放入微任务队列
+  console.log("同步结束");
+  ```  
+
+**3. setTimeout/setInterval（浏览器/Node环境）**  
+- **触发逻辑**：定时器的回调函数会在指定延迟（`setTimeout`）或周期（`setInterval`）后，被放入宏任务队列。  
+- **注意**：延迟时间是“最早执行时间”，而非“精确执行时间”——如果前面有同步任务或其他宏任务未执行完，回调会被延后。  
+- **示例**：  
+  ```javascript
+  console.log("1（同步）");
+  setTimeout(() => {
+    console.log("2（宏任务）");
+  }, 0); // 延迟0ms，仍会被放入宏任务队列
+  console.log("3（同步）");
+  // 执行顺序：1 → 3 → 2（同步完→微任务空→执行宏任务）
+  ```  
+
+
+**4. Node 环境的 I/O 操作（如 fs.readFile）**  
+- **触发逻辑**：Node.js 中，文件读写、数据库操作等I/O任务会由libuv库（负责异步I/O的底层库）处理，操作完成后，回调函数会被放入宏任务队列。  
+- **与浏览器的差异**：Node的宏任务队列更细分（如 `timers`、`poll`、`check` 等阶段），但对开发者而言，核心逻辑仍是“执行一个宏任务→清空微任务”。  
+- **示例**：  
+  ```javascript
+  const fs = require('fs');
+  console.log("同步开始");
+  fs.readFile('test.txt', (err, data) => {
+    console.log("文件读取完成（宏任务）");
+  });
+  console.log("同步结束");
+  // 执行顺序：同步开始→同步结束→（等待文件读取完成）→ 文件读取完成（宏任务）
+  ```  
+
+
+**二、微任务（Micro Task）**  
+微任务是“粒度较细”的异步任务，优先级高于宏任务。每次同步任务执行完后，会**立即清空所有微任务队列**（按加入顺序执行），再执行下一个宏任务。  
+**1. Promise.then/catch/finally（浏览器/Node环境）**  
+- **触发逻辑**：当Promise的状态从“pending”变为“fulfilled”（成功）或“rejected”（失败）时，其关联的 `then`/`catch`/`finally` 回调会被放入微任务队列。  
+- **注意**：`Promise` 构造函数中的 executor 函数（`(resolve, reject) => {}`）是**同步执行**的，只有回调函数才是微任务。  
+- **示例**：  
+  ```javascript
+  console.log("1（同步）");
+  new Promise((resolve) => {
+    console.log("2（同步，executor函数）");
+    resolve();
+  }).then(() => {
+    console.log("3（微任务）");
+  });
+  console.log("4（同步）");
+  // 执行顺序：1 → 2 → 4 → 3（同步完→清空微任务）
+  ```  
+
+
+**2. async/await（浏览器/Node环境）**  
+- **触发逻辑**：`async` 函数返回一个Promise，`await` 关键字后面的表达式执行完后，**await之后的代码块会被包装成微任务**（本质是Promise的 `then` 回调）。  
+- **执行细节**：  
+  - `await` 会先执行右侧的表达式（同步执行）；  
+  - 然后将 `await` 之后的代码放入微任务队列，暂停当前 `async` 函数，先执行外部同步代码；  
+  - 同步代码执行完后，再执行该微任务，恢复 `async` 函数执行。  
+- **示例**：  
+  ```javascript
+  async function fn() {
+    console.log("2（同步）");
+    await Promise.resolve(); // 等价于 Promise.resolve().then(...)
+    console.log("4（微任务）"); // 这行被包装成微任务
+  }
+  console.log("1（同步）");
+  fn();
+  console.log("3（同步）");
+  // 执行顺序：1 → 2 → 3 → 4（同步完→执行微任务）
+  ```  
+
+
+**3. 其他微任务（补充）**  
+- **Node 环境**：`process.nextTick`（优先级高于其他微任务，属于“微任务中的微任务”）。  
+- **浏览器环境**：`MutationObserver`（监听DOM变化的回调，属于微任务）。  
+
+
+**核心总结** 
+在事件循环中，这些任务的执行逻辑是：  
+**同步任务 → 所有微任务（按顺序）→ 一个宏任务 → 所有微任务（按顺序）→ 下一个宏任务……**  
+理解这些任务的分类和触发时机，是分析异步代码执行顺序的关键（比如面试中常见的“输出顺序题”）。
+```js
+// 同步任务1
+console.log("同步任务：1");
+
+// 宏任务1：setTimeout
+setTimeout(() => {
+  console.log("宏任务：setTimeout 回调（1）");
+  // 宏任务内部的微任务
+  Promise.resolve().then(() => {
+    console.log("宏任务1内部的微任务：Promise.then");
+  });
+}, 0);
+
+// 微任务1：Promise.then
+Promise.resolve()
+  .then(() => {
+    console.log("微任务：Promise.then（1）");
+    // 微任务内部的宏任务
+    setTimeout(() => {
+      console.log("微任务1内部的宏任务：setTimeout 回调");
+    }, 0);
+  })
+  .then(() => {
+    console.log("微任务：Promise.then（2）"); // 链式调用的微任务
+  });
+
+// 同步任务2
+console.log("同步任务：2");
+
+// 宏任务2：模拟DOM事件（用setTimeout简化，实际DOM事件触发逻辑类似）
+setTimeout(() => {
+  console.log("宏任务：setTimeout 回调（2）");
+}, 0);
+
+// 微任务2：async/await（本质是Promise的语法糖）
+async function asyncFn() {
+  console.log("同步任务：async函数内的同步代码"); // async函数内的同步部分
+  await Promise.resolve(); // 等待后，后续代码变为微任务
+  console.log("微任务：await后的代码");
+}
+asyncFn();
+```
+```js
+同步任务：1
+同步任务：2
+同步任务：async函数内的同步代码
+微任务：Promise.then（1）
+微任务：Promise.then（2）
+微任务：await后的代码
+宏任务：setTimeout 回调（1）
+宏任务1内部的微任务：Promise.then
+宏任务：setTimeout 回调（2）
+微任务1内部的宏任务：setTimeout 回调
+```
