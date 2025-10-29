@@ -521,3 +521,84 @@ console.log(Person.prototype.constructor === Person); // true
 
 ---
 ## this 的指向在不同场景下（普通函数、箭头函数、构造函数、bind/call/apply）有何不同？
+- 默认绑定
+```js
+function showThis() {
+  console.log(this);
+}
+showThis();
+执行 showThis() 时，控制台会输出全局对象（如浏览器的 window）。
+```
+- 隐式绑定：
+```js
+const obj = {
+  name: "obj",
+  showThis, // 等价于 showThis: showThis
+};
+obj.showThis();
+// 执行 obj.showThis() 时，控制台会输出 obj 对象（因为 showThis 方法是在 obj 上调用的）。
+```
+- new绑定
+1.创建一个新的对象obj
+2.将对象与构建函数通过原型链连接起来
+3.将构建函数中的this绑定到新建的对象obj上
+4.根据构建函数返回类型作判断，如果是原始值则被忽略，如果是返回对象，需要正常处理
+```js
+// 定义构造函数
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+// 用 new 关键字调用构造函数，创建实例
+const person1 = new Person("Alice", 25);
+console.log(person1); // 输出：Person { name: 'Alice', age: 25 }
+```
+- 手写new绑定 
+```js
+// 手写 new 绑定
+function myNew(constructor, ...args) {
+  // 1. 创建一个新的对象 obj
+  const obj = {};
+  // 2. 将对象与构建函数通过原型链连接起来
+  obj.__proto__ = constructor.prototype;
+  // 3. 将构建函数中的 this 绑定到新建的对象 obj 上
+  const result = constructor.apply(obj, args);
+  // 4. 根据构建函数返回类型作判断，如果是原始值则被忽略，如果是返回对象，需要正常处理
+  return result instanceof Object ? result : obj;
+}
+
+```
+- 箭头函数的 this 是词法绑定，不能通过 call、apply、bind 等方法改变 this 指向。
+  
+- 硬绑定（call、apply、bind）
+call：打电话，一个一个说（参数逐个传递）
+apply：应用，把东西整理好一起给（参数数组传递）
+bind：绑定，先准备好，稍后使用（返回新函数）
+```js
+// 不同对象共享方法
+const car = {
+    brand: 'Toyota',
+    showInfo: function(year, color) {
+        console.log(`这是一辆${year}年的${this.brand}，颜色：${color}`);
+    }
+};
+
+const bike = {
+    brand: 'Giant'
+};
+
+// 使用 call
+car.showInfo.call(bike, 2023, '红色');
+// 输出: 这是一辆2023年的Giant，颜色：红色
+
+// 使用 apply
+car.showInfo.apply(bike, [2023, '蓝色']);
+// 输出: 这是一辆2023年的Giant，颜色：蓝色
+
+// 使用 bind
+const bikeInfo = car.showInfo.bind(bike, 2023);
+bikeInfo('绿色');
+// 输出: 这是一辆2023年的Giant，颜色：绿色
+```
+
