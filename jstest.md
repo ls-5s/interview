@@ -1,44 +1,24 @@
-function deepClone(target, map = new WeakMap()) {
- if(target instanceof Date){
-    return new Date(target);
- }
- if(target instanceof RegExp){
-    return new RegExp(target);
- }
- if(map.has(target)){
-    return map.get(target);
- }
- const clone = Array.isArray(target) ? [] : {};
- map.set(target,clone);
- <!-- for(let key in target){
-    if(target.hasOwnProperty(key)){
-        clone[key] = deepClone(target[key],map);
-    }
- } -->
- for(let key of target){
-    if(target.hasOwnProperty(key)){
-        clone[key] = deepClone(target[key],map);
-    }
- }
- return clone;
-}
-
-function sClone(target) {
-    if(typeof target !== 'object' || target === null){
-        return target;
-    }
-    const clone = Array.isArray(target) ? [] : {};
-    if(clone) {
-        for(let key of target){
-            clone[key] = sClone(target[key]);
-        }
-    }else {
-        for(let key in target){
-            if(target.hasOwnProperty(key)){
-                clone[key] = sClone(target[key]);
-            }
-        }
-    }
+```js
+function login(name,password) {
+    return new Promise((resolve,reject)=> {
+        console.log('登录请求:.............', name, password);
         
-    }
+        if(name === 'admin' && password === '123456'){
+            // 模拟登录成功，返回token和用户信息
+            resolve({token:'abc123',user:{name:'管理员'}});
+        }else{
+            // 模拟登录失败
+            reject(new Error('用户名或密码错误'));
+        }
+    })
 }
+login('admin','123456')
+    .then((userInfo)=>{
+        console.log('登录成功:',userInfo);
+    })
+    .catch((error)=>{
+        console.error('登录失败:',error.message);
+    }).finally(()=>{
+        console.log('登录请求结束');
+    })
+```

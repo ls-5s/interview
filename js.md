@@ -940,3 +940,102 @@ function add(a,b) {
 ```js
 使用bigint 表示任意精度的整数，可用于存储和操作超过 52 位整数范围的数值。
 ```
+## 你是怎么理解ES6中 Promise的？使用场景？
+
+Promise 是ES6引入的一个内置的对象，用于表示一个异步操作的最终完成（或失败）及其结果值。
+它是为了解决回调地狱（callback hell）问题，提供了一种更优雅的异步编程方式。
+
+=========================================
+
+回调地狱是因异步操作有依赖，导致回调函数多层嵌套的情况。确实，一层出问题会直接中断后续操作，且嵌套越深，修改时牵一发而动全身，非常麻烦。
+
+========================================
+
+它有以下几个状态：
+pending：初始状态，不是成功或失败。
+fulfilled：操作成功完成，有一个成功值。
+rejected：操作失败，有一个失败原因（错误对象）。
+
+**关键特性**
+状态不可逆：一个 Promise 的状态一旦从 Pending 变为 Fulfilled 或 Rejected，就永久保持这个状态，不会再改变。
+值不可变：一旦状态落定，Promise 的结果值（value）或失败原因（reason）就是不可变的。
+**基本使用**
+```js
+// 模拟用户登录
+function login(username, password) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (username === 'admin' && password === '123456') {
+        resolve({ token: 'abc123', user: { name: '管理员' } });
+      } else {
+        reject(new Error('用户名或密码错误'));
+      }
+    }, 1000);
+  });
+}
+
+// 使用示例
+login('admin', '123456')
+  .then((userInfo) => {
+    console.log('登录成功:', userInfo);
+    localStorage.setItem('token', userInfo.token);
+  })
+  .catch((error) => {
+    console.error('登录失败:', error.message);
+    alert('登录失败，请重试');
+  })
+  .finally(() => {
+    console.log('登录流程结束');
+  });
+```
+
+=========================
+
+**Promise构造函数存在以下方法**
+
+**all()**
+Promise.all() 是 Promise 构造函数的静态方法，用于并行处理多个异步操作，等待所有操作都完成（成功）后再统一处理结果；如果有任何一个操作失败，会立即返回失败的原因。
+**race()**
+Promise.race() 在多个异步操作中采用最先完成的那一个结果，无论成功还是失败。
+
+=========================
+
+**使用场景**
+1. 网络请求
+```js
+fetch('/api/user/data')
+  .then(response => response.json())
+  .then(data => {
+    console.log('获取数据成功:', data);
+    updateUI(data);
+  })
+  .catch(error => {
+    console.error('请求失败:', error);
+    showError('数据加载失败');
+  });
+```
+2. 解决回调地狱
+```js
+// 替代多层嵌套回调
+login(user, pass)
+  .then(userInfo => getPosts(userInfo.id))
+  .then(posts => getComments(posts[0].id)) 
+  .then(comments => renderPage(comments))
+  .catch(error => handleError(error)); // 一个 catch 处理所有错误
+```
+3. 并行处理多个异步操作
+```js
+// 同时发起多个请求，等待所有完成
+Promise.all([
+  fetchUserInfo(),
+  fetchUserOrders(),
+  fetchUserSettings()
+])
+.then(([user, orders, settings]) => {
+  renderDashboard(user, orders, settings);
+})
+.catch(error => {
+  // 只要有一个请求失败，就会执行这里（比如网络错误、接口返回失败）
+  console.error('加载失败：', error.message);
+});
+```
