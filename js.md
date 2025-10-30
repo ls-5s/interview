@@ -741,57 +741,111 @@ JavaScript 是单线程的（同一时间只能执行一段代码），如果所
 在事件循环中，这些任务的执行逻辑是：  
 **同步任务 → 所有微任务（按顺序）→ 一个宏任务 → 所有微任务（按顺序）→ 下一个宏任务……**  
 理解这些任务的分类和触发时机，是分析异步代码执行顺序的关键（比如面试中常见的“输出顺序题”）。
+
+# 10.30
+## 如和区分数组和对象
+根据你提供的表格内容，以下是三种 JavaScript 类型判断方法的优缺点总结：
+ **typeof**
+- **优点**：能够快速区分基本数据类型（如 `string`、`number`、`boolean`、`undefined`、`symbol`、`function`）。
+- **缺点**：不能区分 `Object`、`Array` 和 `Null`（都会返回 `"object"`）。
+---
+ **instanceof**
+- **优点**：能够区分 `Array`、`Object` 和 `Function` 等引用类型。
+- **缺点**：不能判断 `Number`、`Boolean`、`String` 等基本数据类型。
+---
+ **Object.prototype.toString.call()**
+- **优点**：精准判断所有数据类型（返回如 `[object Array]`、`[object Null]` 等）。
+- **缺点**：写法繁琐，不易记忆，通常需要封装成函数使用。
+---
+=====================================
+代码实现
 ```js
-// 同步任务1
-console.log("同步任务：1");
-
-// 宏任务1：setTimeout
-setTimeout(() => {
-  console.log("宏任务：setTimeout 回调（1）");
-  // 宏任务内部的微任务
-  Promise.resolve().then(() => {
-    console.log("宏任务1内部的微任务：Promise.then");
-  });
-}, 0);
-
-// 微任务1：Promise.then
-Promise.resolve()
-  .then(() => {
-    console.log("微任务：Promise.then（1）");
-    // 微任务内部的宏任务
-    setTimeout(() => {
-      console.log("微任务1内部的宏任务：setTimeout 回调");
-    }, 0);
-  })
-  .then(() => {
-    console.log("微任务：Promise.then（2）"); // 链式调用的微任务
-  });
-
-// 同步任务2
-console.log("同步任务：2");
-
-// 宏任务2：模拟DOM事件（用setTimeout简化，实际DOM事件触发逻辑类似）
-setTimeout(() => {
-  console.log("宏任务：setTimeout 回调（2）");
-}, 0);
-
-// 微任务2：async/await（本质是Promise的语法糖）
-async function asyncFn() {
-  console.log("同步任务：async函数内的同步代码"); // async函数内的同步部分
-  await Promise.resolve(); // 等待后，后续代码变为微任务
-  console.log("微任务：await后的代码");
+function getDataType(data) {
+    const dataType = typeof data
+    if(dataType === 'object') {
+        if(data === null) {
+            return 'null'
+        } else if(Array.isArray(data)) {
+            return 'array'
+        } else if(data instanceof Function) {
+            return 'function'
+        } else {
+            return 'object'
+        }
+    } else {
+        return dataType
+    }
 }
-asyncFn();
+null        → 最特殊的情况，需要优先排除
+array       → 特殊的对象，需要明确区分  
+function    → 特殊情况（虽然很少出现）
+object      → 最一般的情况，放在最后
 ```
+## 数组去重
+**如何获取页面上所有使用过的 HTML 标签并去重。**
 ```js
-同步任务：1
-同步任务：2
-同步任务：async函数内的同步代码
-微任务：Promise.then（1）
-微任务：Promise.then（2）
-微任务：await后的代码
-宏任务：setTimeout 回调（1）
-宏任务1内部的微任务：Promise.then
-宏任务：setTimeout 回调（2）
-微任务1内部的宏任务：setTimeout 回调
+/**
+ * 获取HTML页面中所有不重复的标签名
+ * 这是一个数组去重的实际应用场景，用于分析页面使用的HTML标签
+ * @returns {string[]} 返回包含所有不重复标签名的数组，标签名为小写形式
+ */
+function getUniqueHtmlTags() {
+    // 第一步：获取页面中的所有DOM元素
+    // document.querySelectorAll('*') 使用CSS通配符选择器选中文档中的所有元素
+    // 返回的是一个NodeList对象（类数组对象，包含所有匹配的元素节点）
+    const allElements = document.querySelectorAll('*');
+    
+    // 第二步：处理元素集合，提取标签名
+    // Array.from(allElements) 将NodeList类数组对象转换为真正的数组
+    // 这样才能使用数组的map等高阶方法进行遍历处理
+    // .map() 方法遍历每个元素，执行回调函数并返回新数组
+    // element.tagName 获取元素的标签名（返回的是大写形式，如 'DIV', 'P'）
+    // .toLowerCase() 将标签名统一转换为小写，保证一致性（如 'div', 'p'）
+    const tagNames = Array.from(allElements).map(element => 
+        element.tagName.toLowerCase()
+    );
+    
+    // 第三步：使用Set数据结构进行数组去重
+    // new Set(tagNames) 创建Set实例，自动去除数组中的重复项
+    // Set是ES6新增的数据结构，特点是成员值都是唯一的
+    // [...new Set(tagNames)] 使用扩展运算符将Set转换回数组
+    // 这样就得到了一个包含所有不重复标签名的纯净数组
+    const uniqueTags = [...new Set(tagNames)];
+    
+    // 返回最终的不重复标签名数组
+    return uniqueTags;
+}
+
+// 使用示例：
+// 假设页面中有：<div><p></p><span></span><div><p></p></div></div>
+// 调用函数将返回：['html', 'head', 'body', 'div', 'p', 'span'] 等不重复标签
+
+// 函数调用演示：
+// const uniqueTags = getUniqueHtmlTags();
+// console.log(uniqueTags); // 输出页面中所有不重复的HTML标签
 ```
+**js数组去重**
+“数组去重的方法选择要看具体场景：如果是现代项目，我会用[...new Set(arr)]，因为简洁高效，依赖 ES6 的Set特性，适合支持新语法的环境；如果需要兼容旧浏览器（比如 IE8），就用手动遍历 +indexOf的方法，虽然代码长一点，但兼容性有保障；如果是复杂场景（比如对象去重），手动方法的扩展性更好，可以自定义判断规则。这两种方法的核心都是利用‘唯一性’，只是实现方式和适用环境不同。”
+```js
+方法一
+var arr1 = [1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10]
+function unique(arr) {
+  return [...new Set(arr)]
+}
+console.log(unique(arr1))
+方法二
+var arr1 = [1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10]
+function unique(arr) {
+  let res = []
+  for(let i = 0; i < arr.length; i++) {
+    if(res.indexOf(arr[i]) === -1) {
+      res.push(arr[i])
+    }
+  }
+  return res
+}
+console.log(unique(arr1))
+res.indexOf(arr[i]) === -1 的意思是：当前元素 arr[i] 不在结果数组 res 中。
+```
+
+## 面试题：sort 背后原理是什么？
