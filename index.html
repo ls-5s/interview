@@ -14,9 +14,8 @@
 
         body {
             overflow: hidden;
-            background-color: #0a0a0a;
-            background-image: radial-gradient(#f38181 1px, transparent 1px);
-            background-size: 20px 20px;
+            /* 生日主题渐变背景 */
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
             font-family: 'Microsoft YaHei', Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -26,18 +25,62 @@
             position: relative;
         }
 
-        /* 主标题样式 */
+        /* 增加生日氛围的装饰元素 - 彩色圆点 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(#ffcc5c 2px, transparent 2px),
+                radial-gradient(#ff6b6b 2px, transparent 2px),
+                radial-gradient(#4ecdc4 2px, transparent 2px);
+            background-size: 60px 60px, 40px 40px, 80px 80px;
+            background-position: 0 0, 20px 20px, 40px 40px;
+            opacity: 0.6;
+            z-index: -1;
+        }
+
+        /* 生日主题的星星装饰 */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* 主标题样式 - 新的颜色 */
         .main-title {
             position: absolute;
             top: 20%;
             font-size: 48px;
             font-weight: bold;
-            color: #ff6b6b;
+            color: #fff;
             text-align: center;
-            text-shadow: 0 0 10px rgba(255, 107, 107, 0.7), 0 0 20px rgba(255, 107, 107, 0.5);
+            text-shadow: 0 0 15px rgba(101, 136, 255, 0.8), 0 0 30px rgba(101, 136, 255, 0.6);
             z-index: 100;
             opacity: 0;
             animation: fadeIn 1.5s ease-out forwards;
+            background: linear-gradient(45deg, #6588ff, #b967ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         /* 生日图标容器 */
@@ -56,6 +99,7 @@
             font-size: 64px;
             transform: rotate(0deg);
             animation: float 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
         }
 
         /* 图标延迟动画效果 */
@@ -104,7 +148,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 弹幕滚动动画 - 修复版，确保能滚动到最左边 */
+        /* 弹幕滚动动画 - 确保能滚动到最左边 */
         @keyframes danmakuMove {
             0% {
                 transform: translateX(100vw);
@@ -138,6 +182,9 @@
 </head>
 
 <body>
+    <!-- 星星背景装饰 -->
+    <div class="stars"></div>
+    
     <!-- 主标题 -->
     <div class="main-title">李洋生日快乐！</div>
 
@@ -149,7 +196,39 @@
     </div>
 
     <div id="danmaku-container"></div>
+    
     <script>
+        // 创建星星装饰
+        function createStars() {
+            const starsContainer = document.querySelector('.stars');
+            const starCount = 100; // 星星数量
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // 随机大小和位置
+                const size = Math.random() * 3 + 1;
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const delay = Math.random() * 5;
+                const duration = Math.random() * 3 + 1;
+                
+                // 设置样式
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.animationDelay = `${delay}s`;
+                star.style.animationDuration = `${duration}s`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // 调用创建星星函数
+        createStars();
+        
         // 生日快乐祝福语列表 - 扩充版
         const birthdayWishes = [
             "生日快乐！🎂",
@@ -353,9 +432,8 @@
             return bestTrackIndex;
         }
 
-        // 窗口大小改变时重新计算容器大小
+        // 窗口大小改变时重新计算容器大小和方向
         window.addEventListener('resize', function() {
-            // 重新获取容器尺寸
             containerWidth = window.innerWidth;
             containerHeight = window.innerHeight;
             
