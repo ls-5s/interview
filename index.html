@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生日快乐祝福</title>
+    <title>生日快乐弹幕祝福</title>
     <style>
         * {
             margin: 0;
@@ -14,12 +14,9 @@
 
         body {
             overflow: hidden;
-            /* 避免弹窗超出页面产生滚动条 */
-            background-color: #fce38a;
-            /* 主背景颜色 - 温暖的黄色 */
+            background-color: #0a0a0a;
             background-image: radial-gradient(#f38181 1px, transparent 1px);
             background-size: 20px 20px;
-            /* 添加小点缀效果 */
             font-family: 'Microsoft YaHei', Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -35,10 +32,10 @@
             top: 20%;
             font-size: 48px;
             font-weight: bold;
-            color: #333;
+            color: #ff6b6b;
             text-align: center;
-            text-shadow: 3px 3px 0px #ffecd2, 6px 6px 0px #fcb69f;
-            z-index: 5;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.7), 0 0 20px rgba(255, 107, 107, 0.5);
+            z-index: 100;
             opacity: 0;
             animation: fadeIn 1.5s ease-out forwards;
         }
@@ -49,7 +46,7 @@
             top: 40%;
             display: flex;
             gap: 40px;
-            z-index: 5;
+            z-index: 100;
             opacity: 0;
             animation: fadeIn 1.5s ease-out 0.5s forwards;
         }
@@ -62,99 +59,81 @@
         }
 
         /* 图标延迟动画效果 */
-        .birthday-icon:nth-child(1) {
-            animation-delay: 0s;
-        }
+        .birthday-icon:nth-child(1) { animation-delay: 0s; }
+        .birthday-icon:nth-child(2) { animation-delay: 0.5s; }
+        .birthday-icon:nth-child(3) { animation-delay: 1s; }
 
-        .birthday-icon:nth-child(2) {
-            animation-delay: 0.5s;
-        }
-
-        .birthday-icon:nth-child(3) {
-            animation-delay: 1s;
-        }
-
-        #popup-container {
-            position: relative;
-            width: 100vw;
+        #danmaku-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100vh;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
+            z-index: 50;
+            overflow: hidden;
+            pointer-events: none;
         }
 
-        /* 显示弹窗容器的样式 */
-        #popup-container.show {
-            opacity: 1;
-        }
-
-        .popup {
+        /* 弹幕样式 - B站风格 */
+        .danmaku {
             position: absolute;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+            color: white;
+            font-weight: bold;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
             opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+            transform: translateX(100%);
+            animation: danmakuMove linear;
             cursor: pointer;
-            /* 鼠标悬停显示指针，方便点击关闭 */
-            z-index: 10;
-            /* 确保弹窗在最上层 */
-            transform-origin: center;
-            /* 设置变换原点 */
-            animation: float 3s ease-in-out infinite;
-            /* 添加浮动动画 */
+            user-select: none;
+            z-index: 50;
+            pointer-events: auto;
+            will-change: transform, opacity;
         }
 
-        /* 浮动动画效果 */
+        /* 浮动动画效果 - 仅用于图标 */
         @keyframes float {
-            0% {
-                transform: translateY(0px) rotate(0deg);
-            }
-
-            50% {
-                transform: translateY(-10px) rotate(1deg);
-            }
-
-            100% {
-                transform: translateY(0px) rotate(0deg);
-            }
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
         }
 
         /* 淡入动画 */
         @keyframes fadeIn {
-            from {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 弹幕滚动动画 - 修复版，确保能滚动到最左边 */
+        @keyframes danmakuMove {
+            0% {
+                transform: translateX(100vw);
                 opacity: 0;
-                transform: translateY(-20px);
             }
-
-            to {
+            5% {
                 opacity: 1;
-                transform: translateY(0);
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(calc(-100% - 100px));
+                opacity: 0;
             }
         }
 
-        .popup-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
+        /* 弹幕颜色变体 */
+        .danmaku.red { color: #ff6b6b; }
+        .danmaku.yellow { color: #ffe66d; }
+        .danmaku.blue { color: #4ecdc4; }
+        .danmaku.green { color: #45b7d1; }
+        .danmaku.purple { color: #96ceb4; }
 
-        .popup-content {
-            font-size: 16px;
-        }
-
-        /* 关闭按钮样式 */
-        .close-btn {
-            position: absolute;
-            top: 5px;
-            right: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            color: rgba(0, 0, 0, 0.5);
-        }
-
-        .close-btn:hover {
-            color: rgba(0, 0, 0, 0.8);
-        }
+        /* 弹幕字体大小变体 */
+        .danmaku.small { font-size: 14px; }
+        .danmaku.medium { font-size: 18px; }
+        .danmaku.large { font-size: 22px; }
+        .danmaku.extra-large { font-size: 28px; }
     </style>
 </head>
 
@@ -169,157 +148,189 @@
         <div class="birthday-icon">🎁</div>
     </div>
 
-    <div id="popup-container"></div>
+    <div id="danmaku-container"></div>
     <script>
         // 生日快乐祝福语列表
         const birthdayWishes = [
-            "生日快乐！愿你岁岁平安，年年如意！",
+            "生日快乐！🎂",
+            "生日快乐！🎉",
+            "生日快乐！🎁",
+            "李洋生日快乐！",
+            "生日快乐！愿你岁岁平安！",
             "生日快乐！愿所有美好都围绕着你！",
-            "祝你生日快乐，健康幸福每一天！",
             "生日快乐！今天是属于你的特别日子！",
-            "愿你生日快乐，愿望成真！",
-            "生日快乐！愿你的人生充满阳光和欢笑！",
-            "祝你生日快乐，永远年轻美丽！",
-            "生日快乐！愿今天的你被爱包围！",
-            "生日快乐！愿你未来的日子更加精彩！",
-            "祝你生日快乐，心想事成！",
-            "生日快乐！今天的你最闪亮！",
-            "愿你生日快乐，拥有无限的快乐和幸福！",
-            "生日快乐！每一岁都有新的收获！",
-            "祝你生日快乐，健康长寿！",
-            "生日快乐！愿你的每一天都充满惊喜！",
-            "生日快乐！愿你的生活像彩虹一样绚丽多彩！",
-            "祝你生日快乐，事业有成！",
-            "生日快乐！愿你的梦想都能实现！",
-            "生日快乐！愿你的笑容永远灿烂！",
-            "祝你生日快乐，家庭美满！",
-            "生日快乐！愿你永远保持童心！",
-            "生日快乐！这是属于你的美好时刻！",
-            "祝你生日快乐，好运连连！",
-            "生日快乐！愿你被世界温柔以待！",
-            "生日快乐！愿你今天过得超级开心！",
-            "祝你生日快乐，生活如意！",
-            "生日快乐！愿你的未来一片光明！",
-            "生日快乐！每一刻都值得庆祝！",
-            "祝你生日快乐，吉祥如意！",
-            "生日快乐！愿你的生活充满爱和温暖！",
-            "生日快乐！愿快乐与你常伴！",
-            "祝你生日快乐，前程似锦！",
-            "生日快乐！愿你的每一天都充满希望！",
-            "生日快乐！愿你心想事成，万事如意！",
-            "祝你生日快乐，永远开心！",
-            "生日快乐！愿你的人生道路越走越宽！",
-            "生日快乐！愿你的努力都有回报！",
-            "祝你生日快乐，健康快乐到永远！",
-            "生日快乐！今天是你的专属节日！",
-            "生日快乐！愿你永远保持那份热情与活力！"
+            "生日快乐！愿你的人生充满阳光！",
+            "生日快乐！永远开心！",
+            "生日快乐！心想事成！",
+            "生日快乐！青春永驻！",
+            "生日快乐！身体健康！",
+            "生日快乐！事业有成！",
+            "生日快乐！家庭美满！",
+            "生日快乐！笑口常开！"
         ];
 
-        // 渐变色列表
-        const gradients = [
-            "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-            "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
-            "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)",
-            "linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)",
-            "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-            "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-            "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)",
-            "linear-gradient(135deg, #f4c4f3 0%, #fc67fa 100%)",
-            "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)",
-            "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-            "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)",
-            "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)",
-            "linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%)",
-            "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)",
-            "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-            "linear-gradient(135deg, #c3e88d 0%, #829fd9 100%)",
-            "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-            "linear-gradient(135deg, #faf0cd 0%, #fab397 100%)"
-        ];
+        // 弹幕颜色类名
+        const danmakuColors = ['', 'red', 'yellow', 'blue', 'green', 'purple'];
+        
+        // 弹幕大小类名
+        const danmakuSizes = ['small', 'medium', 'large', 'extra-large'];
 
-        const container = document.getElementById("popup-container");
+        const container = document.getElementById("danmaku-container");
+        let containerWidth = window.innerWidth;
+        let containerHeight = window.innerHeight;
+        
+        // 弹幕轨道数量 - 根据屏幕高度计算
+        const trackHeight = 40; // 每个轨道的高度
+        let trackCount = Math.floor(containerHeight / trackHeight);
+        const tracks = []; // 跟踪每个轨道的状态
 
-        // 等待5秒后再生成弹窗
-        setTimeout(() => {
-            // 显示弹窗容器，添加过渡效果
-            container.classList.add('show');
-
-            // 生成50个弹窗
-            for (let i = 0; i < 50; i++) {
-                createPopup(i);
+        // 初始化轨道数组
+        function initTracks() {
+            tracks.length = 0;
+            for (let i = 0; i < trackCount; i++) {
+                tracks.push({ occupied: false, lastDanmakuTime: 0 });
             }
-        }, 3000); // 5秒延迟
-
-        // 创建单个弹窗的函数
-        function createPopup(index) {
-            const popup = document.createElement("div");
-            popup.className = "popup";
-
-            // 随机选择生日祝福和渐变色
-            const randomWish = birthdayWishes[Math.floor(Math.random() * birthdayWishes.length)];
-            const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-            popup.style.backgroundImage = randomGradient;
-
-            // 随机设置弹窗位置（确保在页面可视区域内）
-            const randomLeft = Math.floor(Math.random() * (window.innerWidth - 200)) + "px";
-            const randomTop = Math.floor(Math.random() * (window.innerHeight - 150)) + "px";
-            popup.style.left = randomLeft;
-            popup.style.top = randomTop;
-
-            // 随机设置弹窗宽度
-            const randomWidth = Math.floor(Math.random() * 100) + 150 + "px";
-            popup.style.width = randomWidth;
-
-            // 随机设置动画延迟，使浮动效果更自然
-            const randomDelay = Math.random() * 2;
-            popup.style.animationDelay = `${randomDelay}s`;
-
-            // 填充弹窗内容，增加关闭按钮
-            popup.innerHTML = `
-                <span class="close-btn">×</span>
-                <div class="popup-title">生日快乐！🎉</div>
-                <div class="popup-content">${randomWish}</div>
-            `;
-
-            container.appendChild(popup);
-
-            // 延迟显示，营造逐个弹出的动画效果
-            setTimeout(() => {
-                popup.style.opacity = 1;
-            }, index * 100); // 减少延迟时间，使弹窗出现更快
-
-            // 添加点击关闭功能
-            popup.addEventListener('click', function () {
-                this.style.opacity = 0;
-                setTimeout(() => {
-                    this.remove();
-                }, 500);
-            });
-
-            // 30秒后自动消失
-            setTimeout(() => {
-                popup.style.opacity = 0;
-                setTimeout(() => {
-                    if (document.body.contains(popup)) {
-                        popup.remove();
-                    }
-                }, 500);
-            }, 30000 + index * 100);
         }
 
-        // 添加滚动时轻微移动弹窗的效果
-        window.addEventListener('scroll', function () {
-            const popups = document.querySelectorAll('.popup');
-            popups.forEach(popup => {
-                const randomMove = Math.floor(Math.random() * 5) - 2; // -2 到 2 的随机值
-                const currentLeft = parseInt(popup.style.left);
-                const currentTop = parseInt(popup.style.top);
+        // 等待3秒后开始生成弹幕
+        setTimeout(() => {
+            initTracks();
+            
+            // 初始生成一批弹幕
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    createDanmaku();
+                }, i * 150);
+            }
+            
+            // 持续生成新弹幕
+            setInterval(() => {
+                createDanmaku();
+            }, 250);
+        }, 3000);
 
-                popup.style.left = `${currentLeft + randomMove}px`;
-                popup.style.top = `${currentTop + randomMove}px`;
+        // 创建单个弹幕的函数
+        function createDanmaku() {
+            // 创建弹幕元素
+            const danmaku = document.createElement("div");
+            danmaku.className = "danmaku";
+
+            // 随机选择生日祝福
+            const randomWish = birthdayWishes[Math.floor(Math.random() * birthdayWishes.length)];
+            danmaku.textContent = randomWish;
+
+            // 随机选择颜色
+            const randomColor = danmakuColors[Math.floor(Math.random() * danmakuColors.length)];
+            if (randomColor) {
+                danmaku.classList.add(randomColor);
+            }
+
+            // 随机选择大小
+            const randomSize = danmakuSizes[Math.floor(Math.random() * danmakuSizes.length)];
+            danmaku.classList.add(randomSize);
+
+            // 添加到DOM以获取实际宽度
+            container.appendChild(danmaku);
+            
+            // 强制重排以获取正确的宽度
+            danmaku.offsetWidth; // 触发重排
+            
+            // 获取弹幕实际宽度
+            const danmakuWidth = danmaku.offsetWidth;
+            
+            // 根据弹幕长度和视口宽度调整滚动速度，确保弹幕能完全滚动到最左边
+            const baseDuration = 12;
+            const lengthFactor = Math.max(1, Math.min(3, (danmakuWidth + containerWidth) / 500)); // 基于长度和视口宽度的系数
+            const randomFactor = 0.5 + Math.random() * 1;
+            const duration = baseDuration / randomFactor;
+            danmaku.style.animationDuration = `${duration}s`;
+
+            // 找到一个合适的轨道
+            let trackIndex = findAvailableTrack();
+            
+            // 如果没有找到轨道，随机选择一个
+            if (trackIndex === -1) {
+                trackIndex = Math.floor(Math.random() * trackCount);
+            }
+            
+            // 标记轨道状态
+            tracks[trackIndex].occupied = true;
+            tracks[trackIndex].lastDanmakuTime = Date.now();
+            
+            // 设置弹幕起始位置 - 确保从最右边完全看不到的位置开始
+            danmaku.style.top = `${trackIndex * trackHeight + 5}px`;
+            
+            // 不需要设置left，让CSS动画控制位置
+
+            // 设置动画延迟，增加随机性
+            const delay = Math.random() * 0.5;
+            danmaku.style.animationDelay = `${delay}s`;
+
+            // 动画结束后移除弹幕并释放轨道
+            setTimeout(() => {
+                if (document.body.contains(danmaku)) {
+                    danmaku.style.opacity = 0;
+                    setTimeout(() => {
+                        if (document.body.contains(danmaku)) {
+                            danmaku.remove();
+                        }
+                    }, 300);
+                }
+                tracks[trackIndex].occupied = false;
+            }, (duration + delay) * 1000);
+
+            // 添加点击关闭功能
+            danmaku.addEventListener('click', function() {
+                this.style.opacity = 0;
+                setTimeout(() => {
+                    if (document.body.contains(this)) {
+                        this.remove();
+                    }
+                    tracks[trackIndex].occupied = false;
+                }, 300);
             });
+        }
+
+        // 查找可用轨道的函数
+        function findAvailableTrack() {
+            const currentTime = Date.now();
+            
+            // 优先找完全空闲的轨道
+            for (let i = 0; i < trackCount; i++) {
+                if (!tracks[i].occupied) {
+                    return i;
+                }
+            }
+            
+            // 如果没有完全空闲的轨道，找间隔时间较长的轨道
+            let bestTrackIndex = -1;
+            let maxInterval = 0;
+            
+            for (let i = 0; i < trackCount; i++) {
+                const interval = currentTime - tracks[i].lastDanmakuTime;
+                if (interval > maxInterval) {
+                    maxInterval = interval;
+                    bestTrackIndex = i;
+                }
+            }
+            
+            return bestTrackIndex;
+        }
+
+        // 窗口大小改变时重新计算容器大小
+        window.addEventListener('resize', function() {
+            // 重新获取容器尺寸
+            containerWidth = window.innerWidth;
+            containerHeight = window.innerHeight;
+            
+            // 重新计算轨道数量
+            const newTrackCount = Math.floor(containerHeight / trackHeight);
+            
+            // 如果轨道数量变化，重新初始化
+            if (newTrackCount !== trackCount) {
+                trackCount = newTrackCount;
+                initTracks();
+            }
         });
     </script>
 </body>
