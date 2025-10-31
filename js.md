@@ -1102,3 +1102,96 @@ function throttle(func, limit) {
   };
 }
 ```
+
+# 10.31
+## 面试官：解释下什么是事件代理？应用场景？
+事件代理（Event Delegation）是一种事件处理模式，它利用事件冒泡的机制，将事件处理函数绑定在父元素上，而不是直接绑定在子元素上。
+当子元素触发事件时，事件会冒泡到父元素，从而触发绑定在父元素上的事件处理函数。
+原理：
+DOM 事件触发后，会经历捕获，目标，冒泡三个阶段。
+- 捕获阶段：事件从 window 开始，逐级向下传递到目标元素。
+- 目标阶段：事件到达目标元素。
+- 冒泡阶段：事件从目标元素开始，逐级向上传递到 window。
+其中冒泡阶段是事件代理的关键。它利用事件冒泡的机制，将事件处理函数绑定在父元素上，而不是直接绑定在子元素上。
+
+**优势**
+1.减少事件监听数量：没有必要给每一个子元素事件绑定，只需要给父元素绑定一次即可，大幅度减少内存占用。
+2.动态添加元素：如果后续有新的子元素添加到父元素中，也不需要重新绑定事件，因为事件会冒泡到父元素。
+
+===========================
+
+**应用场景**
+
+子元素数量多、或子元素动态增减
+1. 列表项操作（如ul中的li）：当列表有大量项（如 1000 个li），或需要动态添加 / 删除li时，无需给每个li绑定click事件，而是给ul绑定一次事件，通过event.target判断点击的是哪个li。
+```js
+<ul id="list">
+  <li>项目1</li>
+  <li>项目2</li>
+  <!-- 可能动态添加更多li -->
+</ul>
+<script>
+  const list = document.getElementById('list');
+  // 父元素ul代理所有li的点击事件
+  list.addEventListener('click', (e) => {
+    if (e.target.tagName === 'LI') { // 判断触发事件的是li
+      console.log('点击了：', e.target.textContent);
+    }
+  });
+</script>
+```
+2. 表格单元格操作：表格（table）中的单元格（td）数量多且可能动态更新时，给table绑定事件，代理所有td的点击 /hover 等事件。
+3.导航菜单：导航栏（nav）中的多个菜单项（a或div），通过nav代理点击事件，判断具体点击的菜单项并执行跳转逻辑。
+
+注意:不适合无冒泡特性的事件（如focus、blur），这类事件无法通过父元素代理。
+
+## 面试官：如何判断一个元素是否在可视区域中？
+**getBoundingClientRect() 方法**
+**原理**:通过获取元素相当于视口（viewport）的位置信息，结合视口判断元素是否在可视区域内。
+**适用场景**
+- 简单场景(如偶尔判断一次元素是否在可视区域内)
+- 配合srcoll/resize 事件实现基础监听
+**代码实现**
+```js
+function isviewport(element) {
+  const rect = element.getBoundingClientRect();
+  const viewh = window.innerHeight;
+  const vieww = window.innerWidth;
+  return rect.top <= viewh && rect.left >= 0 && rect.bottom >= 0 && rect.right <= vieww;
+}
+```
+**Intersection Observer API**
+**原理**
+是浏览器提供的原生 API，能自动监测元素与视口（或指定根元素）的交叉状态（进入 / 离开、交叉比例），通过创建 “观察者” 实例，在状态变化时自动触发回调，无需手动监听滚动或视口变化事件，高效且异步，简化了元素可见性相关的开发。
+
+**适用场景**
+- 高频监听场景(图片加载，无限滚动，曝光统计)
+- 需要自动处理元素动态出现/消失的场景
+**代码实现**
+```js
+// 创建交叉观察器实例，用于监测元素是否进入或离开可视区域
+// 构造函数接收一个回调函数，该函数在监测的元素可见性变化时触发
+const observer = new IntersectionObserver((entries) => {
+  // entries 是一个数组，包含所有被观察元素的交叉状态信息
+  entries.forEach((entry) => {
+    // 检查元素是否与视口相交（进入可视区域）
+    if (entry.isIntersecting) {
+      console.log('元素进入可视区域');
+      // 在这里可以添加元素进入可视区域时的处理逻辑
+      // 例如：加载图片、播放视频、触发动画等
+    } else {
+      console.log('元素离开可视区域');
+      // 在这里可以添加元素离开可视区域时的处理逻辑
+      // 例如：暂停视频、隐藏元素、释放资源等
+    }
+  });
+});
+
+// 开始观察指定的DOM元素（element需要是一个有效的DOM节点）
+// 当该元素的可见性状态发生变化时，上面定义的回调函数将被触发
+observer.observe(element);
+```
+**总结**
+若需兼容性优先或简单场景：选 getBoundingClientRect()；
+若需性能优先或高频监听：选 Intersection Observer（现代项目首选）。
+这两个方法覆盖了 90% 以上的 “判断元素是否在可视区域” 需求，是前端开发中最常用的方案。
