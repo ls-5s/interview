@@ -1458,3 +1458,169 @@ user.value = { name: 'bar' } // 有效：新对象会被自动代理，响应式
 **2. 依赖收集和触发更新**
 - 依赖收集：当数据被读取时（如在模板中使用、在计算属性中引用），记录当前「使用该数据的代码」（称为「依赖」）。
 - 触发更新：当数据被修改时，通知所有收集到的「依赖」执行更新（如重新渲染视图、重新计算）
+
+## 面试官：数组的常用方法有哪些？
+**1. 增**
+- push(改变原数组)
+它是在末尾添加一个或多个元素，并返回新的长度。
+```js
+arr.push(5,6)
+```
+- unshift(改变原数组)
+它是在在数组开头添加 1 个或多个元素
+```js
+arr.unshift(2)（改变原数组）
+```
+- concat(...arrays)(不改变原数组)
+  它是在合并多个数组或值，返回新数组。
+```js
+const arr1 = [1, 2];
+const arr2 = [3, 4];
+
+// 合并两个数组
+const newArr1 = arr1.concat(arr2); 
+console.log(newArr1); // [1, 2, 3, 4]
+console.log(arr1); // [1, 2]（原数组未变）
+```
+2. 删
+- pop(改变原数组)
+它是在删除数组的最后一个元素，并返回该元素。
+```js
+arr.pop()（改变原数组）
+```
+- shift(改变原数组)
+它是在删除数组的第一个元素，并返回该元素。
+```js
+arr.shift()（改变原数组）
+```
+- splice(start, deleteCount, ...items)(改变原数组)
+它是在删除从 start 索引开始的 deleteCount 个元素，并在该位置插入 ...items 元素。
+```js
+arr.splice(1, 2, 5, 6)（改变原数组）
+```
+slice(start, end)(不改变原数组)
+它是在返回从 start 索引开始到 end 索引（不包含 end）的新数组。
+```js
+arr.slice(1, 3)（不改变原数组）
+```
+3.改
+- splice(start, deleteCount, ...items)（替换功能）
+功能：删除元素的同时，在start位置插入新元素（删除 + 添加结合）
+原数组：改变
+示例：
+```js
+const arr = [1, 2, 3, 4];
+// 从索引1开始，删除2个元素，插入'x','y'
+arr.splice(1, 2, 'x', 'y'); 
+console.log(arr); // [1, 'x', 'y', 4]（原数组改变）
+
+// 只插入不删除（deleteCount=0）
+arr.splice(2, 0, 'z'); 
+console.log(arr); // [1, 'x', 'z', 'y', 4]
+```
+- reverse()
+功能：反转数组元素顺序
+原数组：改变
+返回值：反转后的原数组（引用不变）
+```js
+const arr = [1, 2, 3];
+const reversed = arr.reverse(); 
+console.log(arr); // [3, 2, 1]（原数组改变）
+console.log(reversed === arr); // true（返回原数组引用）
+```
+4. 查
+- indexOf(item, fromIndex)
+功能：从fromIndex开始，查找item首次出现的索引（严格相等===）
+返回值：找到则返回索引，否则-1
+```js
+const arr = [1, 2, 3, 4, 5];
+console.log(arr.indexOf(3)); // 2
+console.log(arr.indexOf(6)); // -1（未找到）
+```
+- includes(item, fromIndex)
+功能：判断数组是否包含item（支持NaN检测，弥补indexOf缺陷）
+返回值：布尔值
+```js
+const arr = [1, 2, 3, 4, 5];
+console.log(arr.includes(3)); // true
+console.log(arr.includes(6)); // false（未找到）
+console.log(arr.includes(NaN)); // true（NaN 被正确检测）
+```
+5.迭代（遍历 / 处理元素）
+- forEach(callback)
+功能：遍历每个元素，执行callback（无返回值，无法用break中断）
+原数组：不改变（除非回调内手动修改）
+```js
+const arr = [1, 2, 3];
+// 遍历打印每个元素和索引
+arr.forEach((item, index) => {
+  console.log(`索引${index}的值：${item}`); 
+  // 输出：
+  // 索引0的值：1
+  // 索引1的值：2
+  // 索引2的值：3
+});
+```
+- map(callback)
+功能：对每个元素执行callback，返回新数组（长度与原数组一致，元素为处理后的值）
+原数组：不改变
+```js
+const arr = [1, 2, 3];
+// 每个元素乘2
+const doubled = arr.map(item => item * 2); 
+console.log(doubled); // [2, 4, 6]
+console.log(arr); // [1, 2, 3]（原数组未变）
+```
+- filter(callback)
+功能：筛选出满足callback条件的元素，返回新数组（仅包含符合条件的元素）
+原数组：不改变
+```js
+const arr = [1, 2, 3, 4, 5];
+// 筛选偶数
+const evens = arr.filter(item => item % 2 === 0); 
+console.log(evens); // [2, 4]
+console.log(arr); // [1, 2, 3, 4, 5]（原数组未变）
+```
+- reduce(callback, initialValue)
+功能：从左到右遍历，通过callback累计计算为单个值（万能方法：求和、求最值、扁平化等）
+参数：callback(累计值, 当前元素, 索引, 数组)，initialValue为初始累计值（可选）
+```js
+const arr = [1, 2, 3, 4];
+// 求和（初始值为0）
+const sum = arr.reduce((acc, cur) => acc + cur, 0); 
+console.log(sum); // 10
+
+// 求最大值
+const max = arr.reduce((acc, cur) => Math.max(acc, cur), -Infinity); 
+console.log(max); // 4
+
+// 数组扁平化（一层）
+const nestedArr = [1, [2, 3], 4];
+const flatArr = nestedArr.reduce((acc, cur) => acc.concat(cur), []); 
+console.log(flatArr); // [1, 2, 3, 4]
+console.log(nestedArr); // [1, [2, 3], 4]（原数组未变）
+```
+- some(callback)
+功能：判断是否至少有一个元素满足callback条件（找到即返回true，中断遍历）
+返回值：布尔值
+```js
+const arr = [1, 3, 5, 7];
+// 判断是否有偶数
+const hasEven = arr.some(item => item % 2 === 0); 
+console.log(hasEven); // false（全是奇数）
+
+const arr2 = [1, 2, 3];
+console.log(arr2.some(item => item % 2 === 0)); // true（有2）
+```
+- every(callback)
+功能：判断是否所有元素满足callback条件（有一个不满足即返回false）
+返回值：布尔值
+```js
+const arr = [2, 4, 6];
+// 判断是否全是偶数
+const allEven = arr.every(item => item % 2 === 0); 
+console.log(allEven); // true
+
+const arr2 = [2, 3, 4];
+console.log(arr2.every(item => item % 2 === 0)); // false（3是奇数）
+``` 
