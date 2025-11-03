@@ -1195,3 +1195,180 @@ observer.observe(element);
 若需兼容性优先或简单场景：选 getBoundingClientRect()；
 若需性能优先或高频监听：选 Intersection Observer（现代项目首选）。
 这两个方法覆盖了 90% 以上的 “判断元素是否在可视区域” 需求，是前端开发中最常用的方案。
+
+# 11.3
+##  那你说说什么是跨域问题？怎么解决？
+**什么跨域问题**
+浏览器为了保证用户数据的安全：会执行「同源策略」：只有当两个页面(协议、域名、端口号)完全相同，才允许进行交互。
+比如：
+```js
+前端页面地址：http://localhost:3000（协议 http，域名localhost，端口 3000）
+后端接口地址：http://localhost:4000/api（端口不同） → 跨域
+后端接口地址：https://localhost:3000/api（协议不同） → 跨域
+```
+**为什么会有跨域问题？**
+同源策略是浏览器的核心安全机制，目的是防止恶意网站窃取用户数据。例如：如果没有同源策略，A网站可以直接访问B网站的资源，而B网站的用户数据就会被泄露。
+
+**常见的跨域解决方案**
+根据场景不同，解决方案可分为「后端主导」「前端辅助」「代理转发」等类型，常用的有以下几种：
+
+- 后端主导
+```js
+app.use(cors({
+  // 允许所有域名跨域访问
+  origin:"*",
+  // 允许所有 HTTP 方法跨域访问,这里默认是加了预检请求
+  methods:["GET","POST","PUT","DELETE"],
+  // 允许所有请求头跨域访问
+  allowedHeaders:["Content-Type","Authorization"],
+}))
+优点：支持所有 HTTP 方法，安全可控，是现代项目的首选。
+```
+1. 设置 Content-Type（如 JSON 格式）
+```js
+// Axios
+axios.post('https://后端域名/api', { name: 'test' }, {
+  headers: {
+    'Content-Type': 'application/json' // 声明JSON格式（会触发预检请求）
+  }
+});
+
+// Fetch
+fetch('https://后端域名/api', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'test' })
+});
+```
+2. 自定义请求头（如 X-Token）
+```js
+// Axios
+axios.get('https://后端域名/api', {
+  headers: {
+    'X-Token': 'user123-token' // 自定义令牌头
+  }
+});
+
+// Fetch
+fetch('https://后端域名/api', {
+  headers: {
+    'X-Token': 'user123-token'
+  }
+});
+```
+## 什么时候会触发预检请求？()
+## 说一下CSS有哪些选择器？优先级是怎样的？
+1. 通用选择器：'*'
+```css
+* {
+  margin: 0;
+  padding: 0;
+}
+```
+权重：0,0,0,1
+2. 类型选择器：根据元素类型匹配（如 div、p、span 等）
+```css
+div {
+  color: red;
+}
+```
+权重：0,0,1,0
+3. 属性选择器：根据元素的属性值匹配（如 [type="text"]）
+```css
+[type="text"] {
+  border: 1px solid #ccc;
+}
+```
+权重：0,0,1,0
+4. 类选择器：根据元素的 class 属性匹配（如 .class-name）
+```css
+.class-name {
+  font-size: 16px;
+}
+```
+权重：0,0,1,0
+5.伪类选择器：根据元素的状态或位置匹配（如 :hover、:first-child 等）
+```css
+a:hover {
+  color: blue;
+}
+```
+权重：0,0,1,0
+6.Id选择器：根据元素的 id 属性匹配（如 #id-name）
+```css
+#id-name {
+  background-color: #f0f0f0;
+}
+```
+权重：0,1,0,0
+7.伪元素选择器：根据元素的特殊位置匹配（如 ::before、::after 等）
+```css
+p::first-letter {
+  font-size: 24px;
+}
+```
+权重：0,0,1,0
+**组合选择器**
+1.后代选择器：根据元素的嵌套关系匹配（如 div p）
+```css
+div p {
+  color: green;
+}
+```
+权重：0,0,1,0
+2. 子选择器：根据元素的直接子元素匹配（如 div > p）
+```css
+div > p {
+  font-weight: bold;
+}
+```
+权重：0,0,1,0
+3. 相邻兄弟选择器：根据元素的紧跟关系匹配（如 p + p）
+```css
+p + p {
+  margin-top: 10px;
+}
+```
+权重：0,0,1,0
+4. 通用兄弟选择器：根据元素的同级关系匹配（如 p ~ p）
+```css
+p ~ p {
+  text-indent: 20px;
+}
+```
+权重：0,0,1,0
+
+** 优先级**
+优先级： !important > 内联样式 > ID选择器 > 类选择器 > 类型(标签)选择器 > 通用选择器 
+
+## CSS中如果一个img 设置了width： 600 ！important，再设置min-width 会怎么样？
+当 img 同时设置 width: 600px !important 和 min-width 时，最终宽度由 min-width 的值与 width 的值的大小关系 决定：
+如果 min-width 的值 大于 600px（例如 min-width: 800px）：min-width 的 “最小宽度约束” 会生效，img 的实际宽度会是 min-width 的值（800px），忽略 width: 600px !important。（因为 min-width 的核心作用是 “不允许元素宽度小于此值”，无论 width 如何设置，只要小于 min-width 就会被覆盖。）
+如果 min-width 的值 小于或等于 600px（例如 min-width: 400px）：width: 600px !important 会生效，img 的实际宽度为 600px（因为 600px 满足 min-width: 400px 的约束，无需调整）。
+核心逻辑：min-width 和 max-width 是对元素宽度的 “硬性约束”，width 只是 “基础设定”。当 width 与 min-width 冲突时，min-width 会优先保证元素宽度不低于其设定值，不受 width 的 !important 影响。
+
+##  回流和重绘是什么？有什么区别区别？
+**回流**
+当元素的几何属性发生变化时（例如宽度、高度、位置等），浏览器需要重新计算元素的位置和大小，这个过程称为回流（Reflow）。
+- 回流会触发重绘
+**重绘**
+当元素的外观属性发生变化时（例如颜色、背景、边框等），浏览器需要重新绘制元素，这个过程称为重绘（Repaint）。
+- 重绘不会触发回流
+
+**触发场景**
+1. 触发回流的场景（几何属性变化）
+- 直接修改元素的几何样式：如 width、height、margin、padding、border、top、left 等。例：div.style.width = "200px"（宽高变化，需重新计算布局）。
+- 改变元素的布局结构：如添加 / 删除 DOM 元素、隐藏 / 显示元素（display: none 会触发回流，因为元素从布局中移除）。
+- 浏览器窗口尺寸变化：如用户缩放窗口（resize 事件），此时整个页面布局需要重新计算。
+- 改变元素的字体相关属性：如 font-size、font-family（字体大小变化可能导致元素宽高变化）。
+
+
+**触发重绘的场景（外观变化，几何不变）**
+- 修改元素的非几何样式：如 color、background-color、border-color、box-shadow、opacity（不配合 transform 时）等。例：div.style.color = "red"（颜色变化，无需改布局，仅重绘）。
+- 部分 CSS 属性变化：如 visibility: hidden（元素仍占据布局空间，仅隐藏，只触发重绘）。
+
+**差别**
+回流成本更高：回流需要重新计算整个布局树，可能引发连锁反应（父元素、子元素、兄弟元素的布局都可能受影响），性能消耗远大于重绘。
+重绘成本较低：仅需重新绘制元素的视觉部分，不涉及布局计算。
