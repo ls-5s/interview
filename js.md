@@ -1349,7 +1349,7 @@ p ~ p {
 如果 min-width 的值 小于或等于 600px（例如 min-width: 400px）：width: 600px !important 会生效，img 的实际宽度为 600px（因为 600px 满足 min-width: 400px 的约束，无需调整）。
 核心逻辑：min-width 和 max-width 是对元素宽度的 “硬性约束”，width 只是 “基础设定”。当 width 与 min-width 冲突时，min-width 会优先保证元素宽度不低于其设定值，不受 width 的 !important 影响。
 
-##  回流和重绘是什么？有什么区别区别？
+##  回流和重绘是什么？有什么区别区别？(在看看)
 **回流**
 当元素的几何属性发生变化时（例如宽度、高度、位置等），浏览器需要重新计算元素的位置和大小，这个过程称为回流（Reflow）。
 - 回流会触发重绘
@@ -1624,3 +1624,218 @@ console.log(allEven); // true
 const arr2 = [2, 3, 4];
 console.log(arr2.every(item => item % 2 === 0)); // false（3是奇数）
 ``` 
+# 11.4
+## 面试官：typeof 与 instanceof 区别
+**1. 检测的目标不一样：**
+ typeof：主要用于检测基本数据类型（如 number、string 等），对部分引用类型（如 function）也能识别，但无法区分具体的引用类型（如数组、日期等）。
+instanceof:主要用于检测引用类型（对象），判断一个对象是否是某个构造函数的实例（基于原型链），无法直接检测基本数据类型（除非用包装对象）。
+**2. 返回值不同**
+typeof：返回一个字符串，表示数据的类型。可能的值有：'number'、'string'、'boolean'、'undefined'、'symbol'、'bigint'、'function'、'object'。
+instanceof：返回一个布尔值（true 或 false），表示左侧对象是否是右侧构造函数的实例。
+
+instanceof 可以准确地判断复杂引用数据类型，但是不能正确判断基础数据类型
+而typeof 也存在弊端，它虽然可以判断基础数据类型（null 除外），但是引用数据类型中，除了function 类型以外，其他的也无法判断
+**3. 原理不同**
+typeof：通过判断数据的类型标识（底层类型标签）来返回结果。JavaScript 引擎会为不同类型的数据分配一个标签（如 0 表示数字、6 表示对象等），typeof 读取这个标签并返回对应字符串。
+instanceof：通过原型链查找实现。判断右侧构造函数的 prototype 属性是否存在于左侧对象的原型链上（即 obj.__proto__ === Constructor.prototype 或原型链上游是否匹配）。
+
+## 面试官：大文件上传如何做断点续传？
+**核心原理**
+将文件分成小块，分批上传，通过记录已上传的块，中断后可以从断点继续上传
+**步骤**
+1. 文件分片：将大文件分割为固定大小的二进制块（如每块 5MB），单独上传每个块。
+2. 唯一标识：为文件生成唯一的ID，确保同一个文件的标识一样，用于后端识别文件并关联其分片。
+3. 断点记录：后端记录每个文件已上传成功分片分片索引，前端上传前先查询已传分片，只传未完成的部分。
+4. 合并文件：所以的分片上传完后，后端安分片的顺序拼接为完整文件
+
+
+===============================
+## 面试官：如何实现两栏布局，右侧自适应？三栏布局中间自适应呢？
+**两栏布局**
+1.flex弹性布局
+```html
+<style>
+    .box{
+        display: flex;
+    }
+    .left {
+        width: 100px;
+    }
+    .right {
+        flex: 1;
+    }
+</style>
+<div class="box">
+    <div class="left">左边</div>
+    <div class="right">右边</div>
+</div>
+```
+2. 浮动（float）+ margin
+```html
+<style>
+  .box {
+    overflow: hidden; /* 清除浮动影响（避免父元素高度塌陷） */
+  }
+  .left {
+    width: 100px;
+    float: left;
+  }
+  .right {
+    margin-left: 100px; /* 等于左侧宽度，让出空间 */
+  }
+</style>
+<div class="box">
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+3.绝对定位
+```html
+<style>
+  .box {
+    position: relative;
+    min-height: 50px; /* 避免内容为空时高度丢失 */
+  }
+  .left {
+    position: absolute;
+    width: 100px;
+    height: 100%; /* 与父元素等高 */
+  }
+  .right {
+    margin-left: 100px; /* 让出左侧空间 */
+  }
+</style>
+<div class="box">
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+4.Grid 布局
+```html
+<style>
+  .box {
+    display: grid;
+    grid-template-columns: 100px 1fr; /* 第一列100px，第二列自适应 */
+  }
+</style>
+<div class="box">
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+**三栏布局**
+1.flex
+```html
+    .wrap {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .left,
+    .right,
+    .middle {
+        height: 100px;
+    }
+
+    .left {
+        width: 200px;
+        background: coral;
+    }
+
+    .right {
+        width: 120px;
+        background: lightblue;
+    }
+
+    .middle {
+        background: #555;
+        width: 100%;
+        margin: 0 20px;
+    }
+</style>
+<div class="wrap">
+    <div class="left">左侧</div>
+    <div class="middle">中间</div>
+    <div class="right">右侧</div>
+</div>
+```
+2. Grid 布局
+更简单直接，直接定义三列宽度：
+```html
+grid-template-columns: 200px 1fr 120px; 
+```
+## 面试官：元素水平垂直居中的方法有哪些？如果元素不定宽高呢？
+1.元素水平垂直居中
+- flex布局
+- grid布局
+- 利用定位+margin:负值
+```js
+<style>
+    .father {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        background: skyblue;
+    }
+    .son {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left:-50px;
+        margin-top:-50px;
+        width: 100px;
+        height: 100px;
+        background: red;
+    }
+</style>
+<div class="father">
+    <div class="son"></div>
+</div>
+
+```
+- 利用定位+margin:auto
+```js
+<style>
+    .father{
+        width:500px;
+        height:300px;
+        border:1px solid #0a3b98;
+        position: relative;
+    }
+    .son{
+        width:100px;
+        height:40px;
+        background: #f0a238;
+        position: absolute;
+        top:0;
+        left:0;
+        right:0;
+        bottom:0;
+        margin:auto;
+    }
+</style>
+<div class="father">
+    <div class="son"></div>
+</div>
+```
+**没有宽度和高度**
+flex布局
+grid布局
+
+## 面试官：什么是HTTP? HTTP 和 HTTPS 的区别?
+**HTTP**
+HTTP(超文本传输协议)它是客户端(浏览器)与服务器之间传输数据的协议，基于TCP协议工作，组要是使用传输超文本(如HTML ,图片) ，明文传输，没有加密和身份验证，安全性底
+
+**HTTP 和 HTTPS 的区别**
+1.端口
+http默认是：80
+https 默认是 443
+2.开销(网络传输和数据处理过程中消耗的资源（时间、计算能力等)
+http:无加密加密过程，传输效率高
+https：需握手协商加密算法、验证证书，增加额外开销，传输效率略低。
+3.底层协议
+http：它是TCP 协议
+https:是SSL/TLS + TCP(加密 + 传输)
+4.安全性
+http：明文传输，数据易被窃听、篡改，无身份验证，安全性差。
+https: 在 HTTP 基础上加入 SSL/TLS 加密层，数据传输加密，且通过证书验证服务器身份，安全性高。
