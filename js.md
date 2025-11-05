@@ -2011,3 +2011,90 @@ Vue:用v-memo 缓存DOM 片段，computed属性缓存计算结果
 
 **用户体验兜底：降低等待焦虑**
 即使做了性能优化，数据加载过程中仍需通过交互设计让用户感知流畅：
+
+## 箭头函数的this 问题
+
+**箭头函数**：无自己的 this，继承外层作用域的 this
+它没有自己的this 绑定，它的this 完全继承 定于所在的外层作用域(即声明箭头函数时，它外部最近的那个非箭头函数或全局作用域的 this)，且一旦确定就无法被修改（无论用什么方式调用，this 都不会变）。
+**总结**
+箭头函数的 this 是 “定义时定死，调用时不变”，而普通函数的 this 是 “调用时动态决定”。
+
+==========================
+
+**案例 1：全局环境中的箭头函数**
+箭头函数定义在全局作用域时，外层作用域是全局，所以 this 继承全局的 this（浏览器中是 window）。
+```js
+// 普通函数：this 由调用者决定（这里调用者是 window）
+function normalFunc() {
+  console.log('普通函数 this：', this); // window
+}
+normalFunc();
+
+// 箭头函数：this 继承外层作用域（全局）的 this
+const arrowFunc = () => {
+  console.log('箭头函数 this：', this); // window（和外层全局 this 一致）
+};
+arrowFunc();
+```
+
+**案例 2：作为对象方法的箭头函数**
+箭头函数作为对象的方法时，this 不会指向当前对象，而是继承外层作用域的 this（通常是全局）。
+```js
+const obj = {
+  name: '小明',
+  // 普通函数作为方法：this 指向调用者（obj）
+  normalSay: function() {
+    console.log('普通方法 this：', this.name); // 输出：小明
+  },
+  // 箭头函数作为方法：this 继承外层作用域（全局）的 this
+  arrowSay: () => {
+    console.log('箭头方法 this：', this.name); // 输出：undefined（window 没有 name 属性）
+  }
+};
+
+obj.normalSay(); // 调用者是 obj，this 指向 obj
+obj.arrowSay();  // 箭头函数定义时外层是全局，this 继承 window
+```
+
+**案例 3：嵌套函数中，箭头函数继承外层函数的 this**
+
+```js
+const user = {
+  name: '小红',
+  fetchData: function() {
+    // 外层普通函数：this 指向 user（因为被 user 调用）
+    console.log('外层函数 this：', this.name); // 输出：小红
+
+    // 普通函数作为内层函数：this 指向 window（无调用者）
+    function normalInner() {
+      console.log('普通内层 this：', this.name); // 输出：undefined
+    }
+    normalInner();
+
+    // 箭头函数作为内层函数：this 继承外层 fetchData 的 this（即 user）
+    const arrowInner = () => {
+      console.log('箭头内层 this：', this.name); // 输出：小红
+    };
+    arrowInner();
+  }
+};
+
+user.fetchData();
+```
+**案例 4：箭头函数的 this 无法被修改**
+```js
+const obj1 = { name: 'obj1' };
+const obj2 = { name: 'obj2' };
+
+// 普通函数：this 可以被 call 修改
+function normalFunc() {
+  console.log(this.name);
+}
+normalFunc.call(obj1); // 输出：obj1（this 被改为 obj1）
+
+// 箭头函数：this 继承全局（window），无法被 call 修改
+const arrowFunc = () => {
+  console.log(this.name);
+};
+arrowFunc.call(obj1); // 输出：undefined（this 仍为 window，未被修改）
+```

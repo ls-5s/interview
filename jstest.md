@@ -1,24 +1,7 @@
-## 面试官：数组的常用方法有哪些？
-1. 增
-push 
-unshift
-concat
-2. 删
-pop
-shift
-splice
-slice
-3. 改
-   splice
-   sort
-4. 查
-indexof
-includes
 
-5.迭代
-foreach
-map
-reduce
-some
-every
-filter
+## this 的指向在不同场景下（普通函数、箭头函数、构造函数、bind/call/apply）有何不同？
+箭头函数：无自己的 this，继承外层作用域的 this
+它没有自己的this 绑定，它的this 完全继承 定于所在的外层作用域(即声明箭头函数时，它外部最近的那个非箭头函数或全局作用域的 this)，且一旦确定就无法被修改（无论用什么方式调用，this 都不会变）。
+**总结**
+箭头函数的 this 是 “定义时定死，调用时不变”，而普通函数的 this 是 “调用时动态决定”。
+  
