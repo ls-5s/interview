@@ -2417,6 +2417,7 @@ removed === self; // true
 ```
 添加一个p元素
 ```html
+
 const js = document.getElementById('js')
 js.innerHTML = "JavaScript"
 const list = document.getElementById('list');
