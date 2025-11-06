@@ -2341,3 +2341,89 @@ ajax({
 ```
 
 ## 面试官：DOM常见的操作有哪些？
+**定义**：简单说，DOM 是 JavaScript 操作网页内容的 “桥梁”—— 通过 DOM 提供的 API，JavaScript 可以读取、修改、添加或删除 HTML 元素及内容，实现页面的动态交互（比如点击按钮修改文字、动态生成列表等）。
+
+- 创建节点
+#createElement
+创建新元素，接受一个参数，即要创建元素的标签名
+```js
+const divEl = document.createElement("div");
+const dic = document.createElement("div");
+```
+#createTextNode
+创建一个文本节点
+```js
+const textEl = document.createTextNode("content");
+```
+- 获取节点
+#querySelector
+传入任何有效的css 选择器，即可选中单个 DOM元素（首个）：
+```js
+document.querySelector('.element')
+document.querySelector('#element')
+document.querySelector('div')
+document.querySelector('[name="username"]')
+document.querySelector('div + p > span')
+```
+如果页面上没有指定的元素时，返回 null
+
+#querySelectorAll
+返回一个包含节点子树内所有与之相匹配的Element节点列表，如果没有相匹配的，则返回一个空节点列表
+```js
+const notLive = document.querySelectorAll("p");
+```
+- 更新节点
+#innerHTML
+不但可以修改一个DOM节点的文本内容，还可以直接通过HTML片段修改DOM节点内部的子树
+```js
+// 获取<p id="p">...</p >
+var p = document.getElementById('p');
+// 设置文本为abc:
+p.innerHTML = 'ABC'; // <p id="p">ABC</p >
+// 设置HTML:
+p.innerHTML = 'ABC <span style="color:red">RED</span> XYZ';
+```
+- 删除节点
+删除一个节点，首先要获得该节点本身以及它的父节点，然后，调用父节点的removeChild把自己删掉
+```js
+// 拿到待删除节点:
+const self = document.getElementById('to-be-removed');
+// 拿到父节点:
+const parent = self.parentElement;
+// 删除:
+const removed = parent.removeChild(self);
+removed === self; // true
+```
+
+- 添加节点
+#innerHTML
+如果这个DOM节点是空的，例如，<div></div>，那么，直接使用innerHTML = '<span>child</span>'就可以修改DOM节点的内容，相当于添加了新的DOM节点
+
+如果这个DOM节点不是空的，那就不能这么做，因为innerHTML会直接替换掉原来的所有子节点
+
+#appendChild
+把一个子节点添加到父节点的最后一个子节点
+
+举个例子
+```html
+<!-- HTML结构 -->
+<p id="js">JavaScript</p >
+<div id="list">
+    <p id="java">Java</p >
+    <p id="python">Python</p >
+    <p id="scheme">Scheme</p >
+</div>
+
+```
+添加一个p元素
+```html
+const js = document.getElementById('js')
+js.innerHTML = "JavaScript"
+const list = document.getElementById('list');
+list.appendChild(js);
+```
+
+## 面试官：说说 JavaScript 中内存泄漏的几种情况？
+
+
+## Web Workers
