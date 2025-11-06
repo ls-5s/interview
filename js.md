@@ -2233,3 +2233,111 @@ console.log(greeting);
 ===================================================
 
 **实现**
+
+- 创建XMLHttpRequest对象
+通过XMLHttpRequest() 构造函数用于初始化一个 XMLHttpRequest 实例对象
+```js
+const xhr = new XMLHttpRequest();
+```
+- 与服务器建立连接
+通过 XMLHttpRequest 对象的 open() 方法与服务器建立连接
+```js
+xhr.open(method, url, [async][, user][, password])
+// 2. 配置请求（方法：GET；URL：接口地址；异步：true）
+xhr.open('GET', '/api/data?name=test', true);
+```
+- 给服务端发送数据
+通过 XMLHttpRequest 对象的 send() 方法，将客户端页面的数据发送给服务端
+```js
+xhr.send([body])
+```
+- 绑定onreadystatechange事件
+
+onreadystatechange 事件用于监听服务器端的通信状态，主要监听的属性为XMLHttpRequest.readyState ,
+关于XMLHttpRequest.readyState属性有五个状态，如下图显示
+
+============================================
+
+readyState是xhr对象的属性，用于表示请求的 "生命周期状态"，共 5 个值：
+0：未初始化（对象创建后，未调用open方法）；
+1：已打开（调用open方法后，未调用send）；
+2：已发送（调用send方法后，服务器未返回响应头）；
+3：正在接收（服务器已返回部分响应数据）；
+4：完成（服务器已返回全部响应数据，请求彻底完成）。
+只有当readyState === 4时，才说明服务器的响应已经完全接收，此时才能安全地处理响应数据。
+
+=================================================
+
+只要 readyState属性值一变化，就会触发一次 readystatechange 事件
+XMLHttpRequest.responseText属性用于接收服务器端的响应结果
+```js
+const request = new XMLHttpRequest()
+request.onreadystatechange = function(e){
+    if(request.readyState === 4){ // 整个请求过程完毕
+        if(request.status >= 200 && request.status <= 300){
+            console.log(request.responseText) // 服务端返回的结果
+        }else if(request.status >=400){
+            console.log("错误信息：" + request.status)
+        }
+    }
+}
+request.open('POST','http://xxxx')
+request.send()
+```
+- 接受并处理服务端向客户端响应的数据结果
+- 将处理结果更新到 HTML页面中
+
+**封装**
+通过上面对XMLHttpRequest对象的了解，下面来封装一个简单的ajax请求
+```js
+//封装一个ajax请求
+function ajax(options) {
+    //创建XMLHttpRequest对象
+    const xhr = new XMLHttpRequest()
+
+
+    //初始化参数的内容
+    options = options || {}
+    options.type = (options.type || 'GET').toUpperCase()
+    options.dataType = options.dataType || 'json'
+    const params = options.data
+
+    //发送请求
+    if (options.type === 'GET') {
+        xhr.open('GET', options.url + '?' + params, true)
+        xhr.send(null)
+    } else if (options.type === 'POST') {
+        xhr.open('POST', options.url, true)
+        xhr.send(params)
+
+    //接收请求
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            let status = xhr.status
+            if (status >= 200 && status < 300) {
+                options.success && options.success(xhr.responseText, xhr.responseXML)
+            } else {
+                options.fail && options.fail(status)
+            }
+        }
+    }
+}
+
+```
+使用方式如下
+```js
+ajax({
+    type: 'post',
+    dataType: 'json',
+    data: {},
+    url: 'https://xxxx',
+    success: function(text,xml){//请求成功后的回调函数
+        console.log(text)
+    },
+    fail: function(status){////请求失败后的回调函数
+        console.log(status)
+    }
+})
+```
+
+## 面试官：DOM常见的操作有哪些？
