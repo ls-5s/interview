@@ -156,3 +156,225 @@ el：对应的真实 DOM 元素（用于后续挂载 / 更新）。
 - 实现 diff 算法（对比新旧 VNode，找差异）
 - 实现 patch 函数（应用差异到真实 DOM）
 根据 diff 算法找到的差异，修改真实 DOM：
+
+## 你对SPA单页面的理解，它的优缺点分别是什么？如何实现SPA应用呢
+**定义**：SPA,他是前端应用的架构模式，核心特点是整个应用页面只加载一个主的HTML 页面，后面内容的切换
+数据的跟新通过JavaScript 动态渲染DOM 完成，无需重新请求和加载HTML页面。
+**对于spa的核心理解**
+- 核心逻辑："前端路由 + 动态试图渲染"
+- 初始加载时，浏览器请求并加载唯一的主页面（如index.html），同时加载应用所需的 JavaScript、CSS 等资源；
+- 当用户页面跳转，前端路由拦截URL变化，不向服务器发送新的页面请求。
+- 前端框架（如 Vue、React）根据路由规则，动态渲染对应的组件 / 视图，并通过 AJAX/HTTP 请求获取数据，更新页面内容；
+- 整个过程中，页面不会刷新，URL 的变化仅通过前端逻辑管理（如 hash 值变化或 HTML5 History API）。
+
+**SPA 的优点**
+1.用户体验更流畅
+避免了传统多页面应用中 “跳转 - 白屏 - 加载” 的过程，视图切换瞬间完成，减少用户等待感，接近原生 App 的体验。
+2.前后端分离彻底
+后端仅需提供 API 接口（负责数据处理），前端专注于视图渲染和交互逻辑，职责清晰，便于团队分工（前端、后端可并行开发）
+3.减少服务器压力
+4.缓存友好
+静态资源（JS、CSS、图片）可被浏览器缓存，再次访问时无需重新加载，提升加载速度。
+
+**SPA 的缺点**
+1. 首页加载速度可能较慢
+初始加载需一次性下载整个应用的核心 JS/CSS 资源（尤其是大型应用），若资源体积大，可能导致首屏白屏时间过长。
+2. SEO（搜索引擎优化）不友好
+3. 前进 / 后退功能需要手动处理
+4. 内存占用较高
+
+**如何实现一个 SPA 应用?**
+
+# 11.12
+## 面试官：Vue组件之间的通信方式都有哪些？
+1. 父子组件通信
+- 父传子(props)
+父组件通过v-bind像子组件传递数据
+```js
+<template>
+  <!-- 父组件向子组件传递数据，仍使用 v-bind（或简写 `:`） -->
+  <Child :message="parentMsg" />
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const parentMsg = ref('这是父组件传递的消息')
+</script>
+```
+```js
+<script setup>
+import { defineProps } from 'vue'
+
+// 声明接收的 props（支持指定类型、默认值等）
+const props = defineProps({
+  message: {
+    type: String, // 指定类型
+    required: true // 可选：标记为必填
+  }
+})
+
+// 直接访问 props 中的数据
+console.log(props.message)
+</script>
+```
+- 子传父emit触发自定义事件，父组件通过v-on 监听事件并接收数据。
+```js
+<template>
+  <button @click="handleClick">发送数据</button>
+</template>
+
+<script setup>
+// 引入 defineEmits 定义可触发的事件
+const emit = defineEmits(['send-data']);
+
+const handleClick = () => {
+  emit('send-data', '子组件的数据'); // 触发事件并传递参数
+};
+</script>
+<template>
+  <Child @send-data="receiveData" />
+</template>
+
+<script setup>
+import Child from './Child.vue'; // 引入子组件
+
+const receiveData = (data) => {
+  console.log(data); // 输出：子组件的数据
+};
+</script>
+```
+- ref 一般是子传父
+Vue3 中为了增强组件封装性，默认不暴露组件内部的方法 / 数据，需通过 defineExpose 显式暴露才能被父组件访问。
+```js
+子
+<script setup>
+import { ref } from 'vue';
+
+// 子组件内部数据
+const childData = ref('子组件的私有数据');
+
+// 子组件内部方法
+const childMethod = () => {
+  console.log('子组件的方法被调用了！');
+};
+
+// 🔴 关键：显式暴露给父组件访问的内容
+defineExpose({
+  childData,
+  childMethod
+});
+</script>
+
+父组件（通过 ref 访问子组件实例）<template>
+  <div>
+    <!-- 子组件 -->
+    <Child ref="childRef" />
+    <!-- 按钮触发函数 -->
+    <button @click="callChildMethod">调用子组件方法</button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import Child from './Child.vue';
+
+// 绑定子组件实例的ref
+const childRef = ref(null);
+
+// 封装调用子组件逻辑的函数
+const callChildMethod = () => {
+  // 安全校验：确保子组件实例已挂载（避免null报错）
+  if (childRef.value) {
+    // 调用子组件暴露的方法
+    childRef.value.childMethod();
+    // 访问子组件暴露的数据
+    console.log('子组件数据：', childRef.value.childData);
+  } else {
+    console.log('子组件尚未挂载');
+  }
+};
+</script>
+
+```
+- 祖孙与后代组件之间的通信
+结合ref/reactive实现响应式，顶层组件用provide函数，后代用inject函数。
+```vue
+<!-- 祖父组件 -->
+<script setup>
+import { ref, provide } from 'vue';
+const theme = ref('light'); // 响应式数据
+// 提供响应式数据和修改方法
+provide('theme', theme);
+provide('setTheme', (newTheme) => { theme.value = newTheme; });
+</script>
+
+<!-- 孙子组件 -->
+<script setup>
+import { inject } from 'vue';
+const theme = inject('theme'); // 直接注入响应式数据
+const setTheme = inject('setTheme'); // 注入方法
+
+console.log(theme.value); // 'light'
+</script>
+```
+- 非关系组件间之间的通信(pinia)
+- 兄弟组件之间的通信(EventBus)
+创建一个中央事件总线EventBus
+兄弟组件通过$emit触发自定义事件，$emit第二个参数为传递的数值
+另一个兄弟组件通过$on监听自定义事件
+
+## 面试官：为什么data属性是一个函数而不是一个对象？
+组件的data必须是一个函数而不是对象,是为了保证组件的复用性和独立性
+**具体原因避免数据共享导致的副作用**
+- Vue 组件是可复用的实例。如果data是一个对象，那么所有复用该组件的实例会共享同一个 data 对象的引用。这意味着当其中一个组件实例修改 data 中的数据时，其他所有实例的 data 会被同步修改（因为它们指向同一块内存），这显然不符合组件 “独立复用” 的设计初衷。
+- 而如果data是一个函数，每次创建组件实例时，函数都会被调用并返回一个全新的对象（每个实例都拥有自己独立的 data 副本）。这样一来，多个组件实例之间的 data 互不干扰，各自的状态修改只会影响自身，保证了组件的独立性。
+
+## 面试官：说说对WebSocket的理解？应用场景？
+**对WebSocket的核心理解**
+1. 与http的区别(核心优势)
+- 效率：HTTP 每次通信需重新建立连接（包含三次握手等开销），且头部信息冗余；WebSocket 仅在握手阶段使用 HTTP 协议，之后直接通过 TCP 传输数据，头部开销极小，实时性更高。
+- 通信方式：HTTP 是 “请求 - 响应” 模式的单向通信（客户端主动请求，服务器被动响应），且每次通信后连接关闭；WebSocket 建立连接后，客户端和服务器可双向主动发送数据，连接长期保持。
+2. 关键特点
+- 全双工：客户端和服务器可同时向对方发送数据，无需等待对方响应。
+- 持久连接：一旦握手成功，连接会持续保持，直到某一方主动关闭。
+- 无同源限制：客户端可与任意服务器建立 WebSocket 连接（不同于 AJAX 的同源策略限制）。
+- 协议标识：使用 ws://（非加密）或 wss://（加密，类似 HTTPS）作为协议前缀。
+3. 工作流程(握手阶段)
+- 客户端发起连接请求：通过 HTTP 协议发送握手请求，请求头包含特殊字段：
+Upgrade: websocket（声明要升级为 WebSocket 协议）
+Connection: Upgrade（确认升级连接）
+Sec-WebSocket-Key（随机字符串，用于服务器验证）
+Sec-WebSocket-Version（协议版本）。
+- 服务器响应握手：服务器验证请求后，返回 HTTP 101 状态码（Switching Protocols），并通过 Sec-WebSocket-Accept 字段返回加密后的 Sec-WebSocket-Key 结果，确认协议切换。
+- 双向通信：握手成功后，HTTP 连接升级为 WebSocket 连接，双方通过 TCP 直接交换数据（数据帧格式遵循 WebSocket 协议）。
+
+**应用场景**
+WebSocket最适合延迟底，高频次双向数据交换，传统 HTTP 轮询（定时请求）或长轮询（阻塞等待响应）在此类场景中效率极低（频繁建立连接、服务器压力大），而 WebSocket 能显著优化性能。
+- 实时聊天 / 社交应用：如即时通讯工具（微信网页版）、弹幕系统、在线客服，需要双方实时收发消息。实时聊天 / 社交应用：如即时通讯工具（微信网页版）、弹幕系统、在线客服，需要双方实时收发消息。
+- 实时数据监控：如股票行情、期货价格、实时交通流量（需服务器主动推送最新数据给客户端）。
+- 在线协作工具：如多人编辑文档（Google Docs）、协同绘图，用户操作需实时同步给其他参与者。
+- 实时游戏：尤其是多人在线游戏（如实时对战），玩家操作和游戏状态需毫秒级同步。
+
+## 面试官：为什么说HTTPS比HTTP安全? HTTPS是如何保证安全的？
+**Http 是超本文传输协议，其中是明文传输，有三个巨大的问题**
+- 窃听风险：数据在传输途中，可能被第三方拦截并读取
+- 篡改风险：第三方可能篡改传输的数据(比如订单金额)
+- 冒充风险: 第三方可能冒充服务器或客户端（比如 “钓鱼网站” 冒充银行网站骗取用户信息）。
+而 HTTPS（HTTP + SSL/TLS）通过 SSL/TLS 协议对数据进行加密处理，并加入身份验证和完整性校验机制，从根本上解决了这三大风险，因此更安全。
+**二、HTTPS 如何保证安全？（核心机制）**
+1. 数据加密：防止窃听
+HTTPS 采用 “非对称加密 + 对称加密” 结合的方式加密数据，兼顾安全性和传输效率：
+- 对称加密：客户端和服务器使用同一把密钥对数据进行加密和解密（比如 AES 算法）。优点是加密效率极高，适合大量数据传输；缺点是 “密钥如何安全传给对方”—— 如果直接传输密钥，可能被窃听。
+- 非对称加密：使用 “公钥 - 私钥” 对（比如 RSA 算法）。公钥可公开，私钥仅服务器持有；用公钥加密的数据，只能用私钥解密，反之亦然。优点是无需担心密钥传输安全；缺点是加密效率低，不适合大量数据传输。
+2. 数据完整性校验：防止篡改
+HTTPS 通过 “消息认证码（MAC）” 或 “哈希算法（如 SHA）” 确保数据在传输中未被篡改：
+- 发送方在传输数据时，会对数据进行哈希计算，生成一个 “哈希值”（相当于数据的 “指纹”），并将哈希值加密后和数据一起发送。
+- 接收方收到数据后，对数据重新计算哈希值，与解密后的 “指纹” 对比：如果一致，说明数据未被篡改；如果不一致，则判定数据被篡改，拒绝接收。
+3. 身份认证：防止冒充
+HTTPS 通过 “数字证书 + CA 机构” 验证服务器身份，防止 “中间人冒充服务器”：
+- 服务器的公钥需要向权威 CA 机构（如 Let's Encrypt、Verisign）申请 “数字证书”。证书中包含：服务器的公钥、服务器域名、证书有效期、CA 机构的签名（用 CA 私钥加密的证书信息哈希值）。
+- 客户端连接服务器时，服务器会先发送数字证书。客户端会：
+- 验证证书是否由可信 CA 机构颁发（操作系统 / 浏览器内置了可信 CA 的公钥）。
+1. 用 CA 公钥解密证书中的 “CA 签名”，得到证书信息的哈希值，再与自己计算的证书信息哈希值对比，确认证书未被篡改。
+2. 验证证书中的域名是否与当前访问的域名一致（防止 “钓鱼网站” 用其他域名的证书冒充）。
+- 只有证书验证通过，客户端才会认为对方是 “真实的服务器”，继续后续通信；否则会提示 “证书不安全”（如浏览器显示警告页面）。
