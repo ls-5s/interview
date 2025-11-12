@@ -378,3 +378,97 @@ HTTPS 通过 “数字证书 + CA 机构” 验证服务器身份，防止 “�
 1. 用 CA 公钥解密证书中的 “CA 签名”，得到证书信息的哈希值，再与自己计算的证书信息哈希值对比，确认证书未被篡改。
 2. 验证证书中的域名是否与当前访问的域名一致（防止 “钓鱼网站” 用其他域名的证书冒充）。
 - 只有证书验证通过，客户端才会认为对方是 “真实的服务器”，继续后续通信；否则会提示 “证书不安全”（如浏览器显示警告页面）。
+
+## 面试官：说说你对slot的理解？slot使用场景有哪些？
+定义：它是插槽，父组件给子组件通过这个接口，传递html结构，组件，或者内容
+分为三个
+- 默认插槽
+子组件定义：
+```vue
+<!-- Child.vue -->
+<template>
+  <div class="container">
+    <!-- 默认插槽：父组件未指定插槽名的内容会插入这里 -->
+    <slot></slot>
+  </div>
+</template>
+父组件使用：
+vue
+<!-- Parent.vue -->
+<template>
+  <Child>
+    <!-- 这段内容会被插入到子组件的默认插槽中 -->
+    <p>这是父组件传入的内容</p>
+  </Child>
+</template>
+```
+- 具名插槽
+子组件定义：
+```vue
+<!-- Child.vue -->
+<template>
+  <div class="card">
+    <!-- 具名插槽：header -->
+    <slot name="header"></slot>
+    <!-- 具名插槽：body -->
+    <slot name="body"></slot>
+    <!-- 具名插槽：footer -->
+    <slot name="footer"></slot>
+  </div>
+</template>
+父组件使用：
+父组件通过v-slot:插槽名（简写为#插槽名）指定内容插入的目标插槽：
+vue
+<!-- Parent.vue -->
+<template>
+  <Child>
+    <template #header>
+      <h2>卡片标题</h2>
+    </template>
+    <template #body>
+      <p>卡片内容...</p>
+    </template>
+    <template #footer>
+      <button>确认</button>
+    </template>
+  </Child>
+</template>
+```
+- 作用域插槽
+子组件需要向父组件传递数据（供父组件定制内容时使用）时，通过slot绑定属性（“插槽 props”），父组件接收后基于数据渲染内容。
+子组件需要向父组件传递数据（供父组件定制内容时使用）时，通过slot绑定属性（“插槽 props”），父组件接收后基于数据渲染内容。
+子组件定义：
+子组件通过v-bind向插槽传递数据（例如user）：
+```vue
+<!-- Child.vue -->
+<template>
+  <ul>
+    <li v-for="user in users" :key="user.id">
+      <!-- 作用域插槽：向父组件传递当前user数据 -->
+      <slot :user="user"></slot>
+    </li>
+  </ul>
+</template>
+<script>
+export default {
+  data() {
+    return { users: [{ id: 1, name: '张三' }, { id: 2, name: '李四' }] }
+  }
+}
+</script>
+父组件使用：
+父组件通过v-slot:插槽名="变量名"接收子组件传递的插槽 props，再基于数据自定义渲染：
+vue
+<!-- Parent.vue -->
+<template>
+  <Child>
+    <!-- 接收子组件传递的user数据，自定义渲染方式 -->
+    <template v-slot="scope">
+      <p>姓名：{{ scope.user.name }}，ID：{{ scope.user.id }}</p>
+    </template>
+  </Child>
+</template>
+（注：scope是任意命名的变量，也可解构简化：v-slot="{ user }"）
+```
+**使用场景**
+1. 弹窗，卡片，表单
