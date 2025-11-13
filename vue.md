@@ -472,3 +472,41 @@ vue
 ```
 **使用场景**
 1. 弹窗，卡片，表单
+
+## url 包含那些部分 ？
+1. 协议 http：//,wss://,https://
+2. 域名： www.example.com
+- 子域名：www
+- 主域名：example
+- 顶级域名：com
+3. 端口号：80，,443
+4. 路径：
+5. 查询参数
+6. 锚点、
+
+# 11.13
+## JWT 如何自动更新 token ？
+他是通过双令牌机制(访问 + 刷新)，核心思想使用短期的访问的令牌处理请求业务，
+使用长期有效的刷新令牌访问令牌过期自动获取新的访问令牌
+1. 双令牌生成
+```js
+// 登录成功后生成双令牌
+const accessToken = jwt.sign({ userId: 123 }, 'access-secret', { expiresIn: '15m' });
+const refreshToken = jwt.sign({ userId: 123 }, 'refresh-secret', { expiresIn: '7d' });
+// 存储refreshToken（如数据库，关联用户ID，用于后续验证）
+db.refreshTokens.create({ token: refreshToken, userId: 123, expiresAt: new Date(Date.now() + 7*24*60*60*1000) });
+// 返回给客户端
+return { accessToken, refreshToken };
+```
+2. 业务的请求
+```js
+Authorization: Bearer token
+```
+服务器验证 Access Token 的有效性（签名、过期时间），验证通过则处理请求；若过期（返回 401 Unauthorized），则触发刷新流程。
+3. 自动刷新
+当客服端收到401：
+- 客服端刷新token,发起请求，后端检查token 是否过期，是否在数据库，
+- 验证后生成新的访问token 和刷新token,一起返回前端
+- 客户端用新的 Access Token 重新发起原业务请求，并更新本地存储的 Access Token（和新的 Refresh Token）。
+4. 刷新令牌过期（终极处理）
+若 Refresh Token 也过期或无效（如用户长期未操作），服务器返回 401，此时客户端需引导用户重新登录，重新获取双令牌。
