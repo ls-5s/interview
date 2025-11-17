@@ -589,3 +589,58 @@ AIGC 图像生成：将分镜脚本转化为图像 prompt，结合 “提示词�
 个人博客系统聚焦 “内容管理 + 用户体验”，因此在富文本定制、主题切换、文件秒传等场景做了深度优化。
 这种技术栈的 “复用 + 差异化优化”，既保证了开发效率，又能针对性解决不同业务的痛点。
 以上回答需结合你实际开发的细节调整，重点突出技术决策的逻辑、问题解决的具体步骤、数据化的成果，才能充分体现技术深度和项目把控力。
+
+## Vue 组件的生命周期
+他是组件从创造，挂载，更新，销毁的4个过程，每个阶段都有特定的生命周期函数，开发者可以在里面写对应的逻辑(初始化数据，操作DOM,清理资源)
+1. 创造阶段(组件实例初始化)
+- setup()
+组件实例创建前执行(代替了Vue2 的 beforeCreate 和 created),这个时候实例还没有初始化，无法访问this
+作用：初始化响应式数据（ref/reactive）、定义方法、设置监听（watch）等。
+例：
+```javascript
+运行
+import { ref, onMounted } from 'vue'
+setup() {
+  const count = ref(0) // 初始化响应式数据
+  return { count } // 暴露给模板
+}
+```
+2. 挂载阶段(组件与DOM结合)
+- onBeforeMount
+DOM 挂载前调用，这个时候模版已经编译，但是没有挂载页面(无法获取DOM元素)
+- onMounted
+DOM 挂载完后调用，这个时候可以通过ref获取DOM 元素，可以进行DOM 操作，发起接口请求
+```js
+import { onMounted, ref } from 'vue'
+setup() {
+  const domRef = ref(null)
+  onMounted(() => {
+    console.log('DOM已挂载', domRef.value) // 可获取DOM
+    fetchData() // 发起数据请求
+  })
+  return { domRef }
+}
+```
+3. 更新阶段(数据变化导致DOM重新渲染)
+- onBeforeUpdate
+数据更新后，DOM 重新渲染前调用，这个时候可以获取更新前的DOM 状态
+作用：这个时候可以对比更新前后数据或者DOM 状态
+- onUpdated
+DOM 重新渲染后调用，这个可以获取DOM 更新后的DOM
+注意：避免这个时候修改数据
+4. 卸载阶段（组件从页面移除）
+- onBeforeUnmount
+组件卸载前调用，此时组件仍可用（可访问数据和 DOM）。作用：清理资源（如清除定时器、解绑事件监听、取消接口请求）。例：
+```javascript
+运行
+import { onBeforeUnmount } from 'vue'
+setup() {
+  const timer = setInterval(() => {}, 1000)
+  onBeforeUnmount(() => {
+    clearInterval(timer) // 清理定时器
+  })
+}
+```
+- onUnmounted
+组件卸载后调用，此时组件实例已销毁，无法访问数据和 DOM。作用：做最终的资源释放（如断开 WebSocket 连接）。
+  
