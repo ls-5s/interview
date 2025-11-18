@@ -801,4 +801,52 @@ const routes = [{ path: '/', component: Home }]
 初始加载部分数据，滚动到页面底部时，触发下一页数据请求。
 
 ## 实现一个盒子垂直居中？如果那个盒子没有高度和宽度怎么搞 ?
-
+flex布局
+grid布局
+利用定位+margin:负值
+```js
+<style>
+    .father {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        background: skyblue;
+    }
+    .son {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left:-50px;
+        margin-top:-50px;
+        width: 100px;
+        height: 100px;
+        background: red;
+    }
+</style>
+<div class="father">
+    <div class="son"></div>
+</div>
+```
+利用定位+margin:auto
+```js
+<style>
+    .father{
+        width:500px;
+        height:300px;
+        border:1px solid #0a3b98;
+        position: relative;
+    }
+    .son{
+        width:100px;
+        height:40px;
+        background: #f0a238;
+        position: absolute;
+        top:0;
+        left:0;
+        right:0;
+        bottom:0;
+        margin:auto;
+    }
+</style>
+```
+## 面试官：你是怎么理解ES6中 Promise的？使用场景？
