@@ -720,3 +720,85 @@ provide 和  Inject
 pinia
 
 ## 跨域的问题 ？
+
+**什么跨域问题**
+浏览器为了保证用户数据的安全：会执行「同源策略」：只有当两个页面(协议、域名、端口号)完全相同，才允许进行交互。
+比如：
+```js
+前端页面地址：http://localhost:3000（协议 http，域名localhost，端口 3000）
+后端接口地址：http://localhost:4000/api（端口不同） → 跨域
+后端接口地址：https://localhost:3000/api（协议不同） → 跨域
+```
+**为什么会有跨域问题？**
+同源策略是浏览器的核心安全机制，目的是防止恶意网站窃取用户数据。例如：如果没有同源策略，A网站可以直接访问B网站的资源，而B网站的用户数据就会被泄露。
+
+**常见的跨域解决方案**
+根据场景不同，解决方案可分为「后端主导」「前端辅助」「代理转发」等类型，常用的有以下几种：
+
+- 后端主导
+```js
+app.use(cors({
+  // 允许所有域名跨域访问
+  origin:"*",
+  // 允许所有 HTTP 方法跨域访问,这里默认是加了预检请求
+  methods:["GET","POST","PUT","DELETE"],
+  // 允许所有请求头跨域访问
+  allowedHeaders:["Content-Type","Authorization"],
+}))
+优点：支持所有 HTTP 方法，安全可控，是现代项目的首选。
+```
+1. 设置 Content-Type（如 JSON 格式）
+```js
+// Axios
+axios.post('https://后端域名/api', { name: 'test' }, {
+  headers: {
+    'Content-Type': 'application/json' // 声明JSON格式（会触发预检请求）
+  }
+});
+
+// Fetch
+fetch('https://后端域名/api', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'test' })
+});
+```
+2. 自定义请求头（如 X-Token）
+```js
+// Axios
+axios.get('https://后端域名/api', {
+  headers: {
+    'X-Token': 'user123-token' // 自定义令牌头
+  }
+});
+
+// Fetch
+fetch('https://后端域名/api', {
+  headers: {
+    'X-Token': 'user123-token'
+  }
+});
+```
+## 懒加载怎么实现的 ？
+
+懒加载的核心是 “延迟加载资源”，仅当资源进入 / 即将进入可视区域时才加载，以优化性能
+
+**一、图片懒加载（最常见）**
+- 初始不设置 src（或用占位图），真实地址存到 data-src 等自定义属性。
+- 监听图片是否进入可视区域，进入则将 data-src 赋值给 src 触发加载。
+
+**二， 路由懒加载（Vue/React）**
+- Vue 路由懒加载：
+```javascript
+运行
+// 路由配置中使用 import() 动态导入
+const Home = () => import('@/views/Home.vue')
+const routes = [{ path: '/', component: Home }]
+```
+**列表数据懒加载（滚动加载更多）**
+初始加载部分数据，滚动到页面底部时，触发下一页数据请求。
+
+## 实现一个盒子垂直居中？如果那个盒子没有高度和宽度怎么搞 ?
+
