@@ -1223,3 +1223,18 @@ window.myFunction = createHeavyObject();
 setInterval 和 setTimeout 是常见的定时器。如果定时器的回调函数引用了某个对象，并且定时器没有被 clearInterval 或 clearTimeout 清除，那么只要定时器在运行，这个对象就无法被回收。
 
 在不再需要定时器时，务必调用 clearInterval(id) 或 clearTimeout(id)。
+
+## 面试官：说说你对事件循环的理解
+**一、为什么需要事件循环？**
+JavaScript 是一门单线程语言，这意味着它同一时间只能执行一个任务。如果没有事件循环，当代码执行到一个耗时操作（比如网络请求、定时器、读取文件）时，线程就会被阻塞，后面的代码无法继续执行，导致整个程序卡死。
+
+JS 事件循环是单线程下处理异步的核心机制：同步代码优先执行，同步任务完成后清空所有微任务，再执行一个宏任务，如此循环。
+
+宏任务
+宏任务的时间粒度比较大，执行的时间间隔是不能精确控制的，对一些高实时性的需求就不太符合
+setTimeout/setInterval
+微任务
+一个需要异步执行的函数，执行时机是在主函数执行结束之后、当前宏任务结束之前
+Promise.then
+async/await（本质是 Promise 的语法糖，await 后的代码会进入微任务队列）
+DOM 事件：click / scroll / resize 等事件的回调函数
