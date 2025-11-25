@@ -1148,6 +1148,7 @@ memoizedAdd(3, 4); // 打印 "计算结果 for [3,4]" 和 "执行了 add 函数"
 - localStorage
 - indexedDB
 
+
 **cookie**
 存储大小限制在 4KB 左右。
 数据会自动随着 HTTP 请求发送到服务器。
