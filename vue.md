@@ -967,4 +967,214 @@ arr.push(4);
 
 # 11.25
 ## 面试官：大文件上传如何做断点续传？
+- 文件分片
+计算分片数量：totalChunk = ceil(文件大小 / 分片大小)；
+生成唯一标识：为每个文件生成唯一 ID（如MD5(文件名 + 文件大小 + 最后修改时间)），用于服务端识别同一文件的分片，避免重复上传。
+- 断点记录：后端记录每个文件已上传成功分片分片索引，前端上传前先查询已传分片，只传未完成的部分。
+- 合并文件：所以的分片上传完后，后端安分片的顺序拼接为完整文件.
 
+## 请描述下你对vue生命周期的理解？
+Vue 生命周期是 组件从创建到销毁的完整过程
+1. 创造阶段(组件实例初始化)
+- setup()
+组件实例创建前执行(代替了Vue2 的 beforeCreate 和 created),这个时候实例还没有初始化，无法访问this
+作用：初始化响应式数据（ref/reactive）、定义方法、设置监听（watch）等。
+例：
+```javascript
+运行
+import { ref, onMounted } from 'vue'
+setup() {
+  const count = ref(0) // 初始化响应式数据
+  return { count } // 暴露给模板
+}
+```
+2. 挂载阶段(组件与DOM结合)
+- onBeforeMount
+DOM 挂载前调用，这个时候模版已经编译，但是没有挂载页面(无法获取DOM元素)
+- onMounted
+DOM 挂载完后调用，这个时候可以通过ref获取DOM 元素，可以进行DOM 操作，发起接口请求
+```js
+import { onMounted, ref } from 'vue'
+setup() {
+  const domRef = ref(null)
+  onMounted(() => {
+    console.log('DOM已挂载', domRef.value) // 可获取DOM
+    fetchData() // 发起数据请求
+  })
+  return { domRef }
+}
+```
+3. 更新阶段(数据变化导致DOM重新渲染)
+- onBeforeUpdate
+数据更新后，DOM 重新渲染前调用，这个时候可以获取更新前的DOM 状态
+作用：这个时候可以对比更新前后数据或者DOM 状态
+4. 卸载阶段（组件从页面移除）
+- onBeforeUnmount
+组件卸载前调用，此时组件仍可用（可访问数据和 DOM）。作用：清理资源（如清除定时器、解绑事件监听、取消接口请求）。例：
+```javascript
+运行
+import { onBeforeUnmount } from 'vue'
+setup() {
+  const timer = setInterval(() => {}, 1000)
+  onBeforeUnmount(() => {
+    clearInterval(timer) // 清理定时器
+  })
+}
+```
+- onUnmounted
+组件卸载后调用，此时组件实例已销毁，无法访问数据和 DOM。作用：做最终的资源释放（如断开 WebSocket 连接）。
+  
+## 面试官：什么是防抖和节流？有什么区别？如何实现？
+节流: n 秒内只运行一次，若在 n 秒内重复触发，只有一次生效
+防抖: n 秒后在执行该事件，若在 n 秒内被重复触发，则重新计时
+防抖在连续的事件，只需触发一次回调的场景有：
+
+搜索框搜索输入。只需用户最后一次输入完，再发送请求
+手机号、邮箱验证输入检测
+窗口大小resize。只需窗口调整完成后，计算窗口大小。防止重复渲染。
+节流在间隔一段时间执行一次回调的场景有：
+
+滚动加载，加载更多或滚到底部监听
+搜索框，搜索联想功能
+防抖代码实现
+```js
+function de(func,wait) {
+  let timeout 
+    return function(...args) {
+      let context = this
+      clearTimeout(timeout)
+      timeout = serTimeout(()=>{
+        func.apply(context,args)
+      },wait)
+    }
+}
+```
+节流
+```js
+function throttle(func, limit) {
+  let lastCall = 0;
+  // 保存上一次执行的时间戳，初始值为0（第一次调用时会更新）
+  return function(...args) {
+    // 保存当前上下文的this指向（确保原始函数执行时，this能指向正确的对象）
+    const context = this;
+    // 获取当前时间戳（毫秒级），用于计算时间差
+    const now = Date.now();
+    // 检查是否超过时间限制
+    if (now - lastCall >= limit) {
+      func.apply(context, args);
+      lastCall = now;
+    }
+  };
+}
+```
+## 面试官：说说 Javascript 数字精度丢失的问题，如何解决？
+一个经典的面试题
+```js
+0.1 + 0.2 === 0.3 // false
+```
+JavaScript 中所有数字（整数、小数）都遵循 IEEE 754 标准，以 64 位双精度浮点数 存储。这种存储方式的核心问题的是：部分十进制数无法被二进制精确表示，只能存储近似值，进而导致计算时出现精度偏差。
+1. 存储结构（64 位双精度浮点数）
+1 位符号位（正 / 负）
+11 位指数位（表示数值的量级）
+52 位尾数位（表示数值的精度，决定了有效数字的上限）
+
+解决方法
+```js
+function add(num1, num2) {
+  const num1Digits = (num1.toString().split('.')[1] || '').length;
+  const num2Digits = (num2.toString().split('.')[1] || '').length;
+  const baseNum = Math.pow(10, Math.max(num1Digits, num2Digits));
+  return (num1 * baseNum + num2 * baseNum) / baseNum;
+}
+```
+
+BigInt 是 JavaScript 中用于表示任意精度整数的原始类型。它可以表示比 Number 大得多的整数，而不会丢失精度。
+在整数后面加上 n 后缀。
+BigInt 和 Number 是不同的类型，不能直接进行混合运算。
+在需要进行比较时要小心，10n === 10 的结果是 false，因为它们的类型不同。
+BigInt 不能用于 Math 对象的方法中。
+如果从后端 API 接收大整数，最好让后端以字符串形式返回，然后在前端用 BigInt() 解析，以避免在传输和解析过程中丢失精度。
+
+## 面试官：Javascript中如何实现函数缓存？函数缓存有哪些应用场景？
+一、什么是函数缓存？
+函数缓存（Function Caching）是一种优化技术，它的核心思想是：将一个函数的计算结果，根据其输入参数（或部分关键参数）进行存储。当后续再次使用相同的参数调用该函数时，直接返回已存储的结果，而不是重新执行函数体。
+二、如何实现函数缓存？
+1. 基础实现：使用闭包和对象
+```js
+function memoize(fn) {
+  // 缓存容器，存储格式为 { '参数1,参数2': '结果' }
+  const cache = {};
+  // 返回一个新的函数，这个函数会先检查缓存
+  return function(...args) {
+    // 将参数数组转换为字符串，作为缓存的 key
+    // 注意：这种方式对引用类型参数有局限性，后面会讨论
+    const key = JSON.stringify(args);
+    // 检查缓存中是否存在该 key
+    if (cache.hasOwnProperty(key)) {
+      console.log(`从缓存中获取结果 for ${key}`);
+      return cache[key];
+    }
+    // 如果缓存中没有，则执行原始函数
+    console.log(`计算结果 for ${key}`);
+    const result = fn.apply(this, args);
+    // 将结果存入缓存
+    cache[key] = result;
+    // 返回结果
+    return result;
+  };
+}
+```
+```js
+// 一个耗时的计算函数
+function add(a, b) {
+  console.log("执行了 add 函数");
+  return a + b;
+}
+// 创建一个被缓存的 add 函数
+const memoizedAdd = memoize(add);
+memoizedAdd(1, 2); // 打印 "计算结果 for [1,2]" 和 "执行了 add 函数"，返回 3
+memoizedAdd(1, 2); // 打印 "从缓存中获取结果 for [1,2]"，直接返回 3
+memoizedAdd(3, 4); // 打印 "计算结果 for [3,4]" 和 "执行了 add 函数"，返回 7
+```
+三.函数缓存的应用场景
+- 计算密集型函数：
+数学计算，如阶乘、斐波那契数列、矩阵运算。
+数据加密 / 解密、
+本质是：函数缓存是一种强大的性能优化手段，其核心是空间换时间。在 JavaScript 中，我们主要利用闭包来实现缓存的存储，并可以结合 Map、WeakMap 或 LRU 等数据结构和策略来优化缓存的行为。
+
+## 面试官：Javascript本地存储的方式有哪些？区别及应用场景？
+- cookie
+- sessionStorage
+- localStorage
+- indexedDB
+
+**cookie**
+存储大小限制在 4KB 左右。
+数据会自动随着 HTTP 请求发送到服务器。
+可以通过 expires 或 max-age 设置过期时间，未设置则为会话级（关闭浏览器后删除）。
+使用
+存储会话标识（如登录凭证）。
+记住用户偏好设置（如语言、主题）。
+
+**localStorage**
+存储大小通常为 5MB。
+数据仅存储在客户端，不会发送到服务器。
+生命周期为永久，除非手动删除（通过代码或浏览器设置）。
+使用
+存储用户登录状态（如 Token，但需注意安全）。
+缓存不常变化的数据（如商品列表、配置信息）。
+
+**sessionStorage**
+存储大小通常为 5MB。
+数据仅存储在客户端，不会发送到服务器。
+生命周期为当前会话（关闭标签页或浏览器后数据丢失）。
+使用
+保存会话期间的临时状态（如分页信息、排序条件）。
+防止重复提交（如表单提交后禁用按钮的状态）。
+
+**IndexedDB**
+存储大小无固定限制（取决于硬盘空间）。
+属于 NoSQL 数据库，支持复杂数据结构（如对象、数组、Blob）。
+使用
+离线应用数据存储（如 PWA 离线缓存）。
+存储大量用户数据（如聊天记录、邮件）。
