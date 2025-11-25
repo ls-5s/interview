@@ -1179,3 +1179,47 @@ memoizedAdd(3, 4); // 打印 "计算结果 for [3,4]" 和 "执行了 add 函数"
 使用
 离线应用数据存储（如 PWA 离线缓存）。
 存储大量用户数据（如聊天记录、邮件）。
+
+## 面试官：说说 JavaScript 中内存泄漏的几种情况？
+内存泄漏（Memory Leak）指的是程序中已分配的内存，在不再需要时没有被正确释放，导致内存占用持续升高，最终可能导致应用性能下降、卡顿甚至崩溃。
+
+1. 意外的全局变量
+这是最常见也是最容易发生的内存泄漏。在非严格模式下，未声明的变量会自动成为全局对象（window 或 global）的属性，从而不会被垃圾回收机制（Garbage Collector, GC）回收。
+```js
+// 错误示例：未声明变量
+function foo() {
+  bar = "hello world"; // bar 成为 window 的属性
+}
+foo();
+
+// 错误示例：this 指向全局
+function Person() {
+  this.name = "John"; // 如果没有使用 new 关键字调用，this 指向 window
+}
+Person(); // window.name 被创建
+```
+
+2. 闭包引起的内存泄漏
+但如果闭包被长期持有，并且它引用了外部函数中的大量数据，就可能导致这些数据无法被回收，从而造成内存泄漏。
+```js
+function createHeavyObject() {
+  // 一个很大的数据结构
+  const largeData = new Array(1000000).fill('some data');
+  
+  return function() {
+    // 闭包引用了 largeData
+    console.log(largeData.length);
+  };
+}
+
+// 将闭包赋值给一个全局变量
+window.myFunction = createHeavyObject(); 
+// 此时，createHeavyObject 函数已经执行完毕，但由于 myFunction 持有闭包，
+// largeData 及其所在的作用域无法被 GC 回收。
+```
+如果必须使用，确保在不再需要时手动解除引用（window.myFunction = null;）。
+
+3. 被遗忘的定时器和回调函数
+setInterval 和 setTimeout 是常见的定时器。如果定时器的回调函数引用了某个对象，并且定时器没有被 clearInterval 或 clearTimeout 清除，那么只要定时器在运行，这个对象就无法被回收。
+
+在不再需要定时器时，务必调用 clearInterval(id) 或 clearTimeout(id)。
