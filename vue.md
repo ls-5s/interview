@@ -1648,3 +1648,86 @@ setTimeout(() => {
 
 // 实际执行延迟≈4ms（浏览器环境下）
 ```
+## Websocket 和 sse 差别 ？
+**一.关键差异拆解（原理 + 示例）**
+1. 通信方向：双向交互 vs 单向推送（核心区别）
+这是两者最本质的差异，直接决定适用场景：
+- WebSocket：像 “电话通话”—— 客户端和服务端建立连接后，双方可以随时向对方发数据，无需等待对方响应。示例场景：微信聊天（你发消息给好友，好友实时收到；好友回复，你也实时收到）、多人协作编辑文档（A 编辑内容，B 实时看到）。
+- SSE：像 “收音机广播”—— 客户端先和服务端建立一个长连接，之后只能被动接收服务端推送的内容，无法通过这个连接主动向服务端发数据（若需客户端传数据，需额外用 HTTP 请求，如 POST）。示例场景：股票行情推送（服务端实时把股价传给客户端，客户端无需回传）、系统通知（服务端推送 “新消息提醒”，客户端仅接收）。
+2. 底层协议：独立协议 vs HTTP 复用
+- WebSocket：不依赖 HTTP，而是一套独立的应用层协议（ws:// 对应 HTTP，wss:// 对应 HTTPS，加密更安全）。连接建立过程：客户端先发送 HTTP “握手请求”，服务端响应后，连接升级为 WebSocket 协议，之后所有数据都通过这个 TCP 连接直接传输，不再走 HTTP 流程。客户端示例代码：
+```javascript
+运行
+// WebSocket 客户端（浏览器端）
+const ws = new WebSocket("wss://api.example.com/chat");
+
+// 客户端向服务端发数据（双向通信）
+ws.send(JSON.stringify({ type: "msg", content: "Hello" }));
+
+// 接收服务端数据
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log("服务端消息：", data);
+};
+```
+- SSE：完全基于 HTTP/HTTPS 协议，复用普通 HTTP 连接，无需协议升级。连接建立过程：客户端用 EventSource 发起一个 HTTP GET 请求，服务端响应时设置响应头 Content-Type: text/event-stream，表示这是 “事件流”，之后保持连接不关闭，持续向客户端推送文本数据。客户端示例代码：
+```javascript
+运行
+// SSE 客户端（浏览器端，原生 API 极简）
+const sse = new EventSource("https://api.example.com/stock-price");
+
+// 接收服务端推送的“默认类型”消息
+sse.onmessage = (event) => {
+  const price = JSON.parse(event.data);
+  console.log("股价更新：", price);
+};
+
+// 接收服务端推送的“指定类型”消息（如通知）
+sse.addEventListener("notice", (event) => {
+  const notice = JSON.parse(event.data);
+  console.log("系统通知：", notice);
+});
+
+// 客户端无法通过 SSE 连接发数据，需额外用 HTTP
+// fetch("https://api.example.com/user-action", { method: "POST", body: "..." });
+```
+3. 数据格式与消息特性
+- WebSocket：无格式限制，灵活性极高。可传输文本（JSON、字符串）、二进制数据（图片、音频、视频分片），甚至自定义二进制协议（如游戏协议）。但需要手动处理数据解析、消息类型区分（比如在 JSON 里加 type 字段）。
+- SSE：仅支持 UTF-8 文本，但有内置消息格式规范（简化开发）。服务端推送的消息必须遵循固定格式（每行用 \n 分隔，核心字段：
+data:：消息内容（必填，多行文本用 data: 多行拼接）；
+event:：消息类型（可选，用于区分不同场景，如 notice、price）；
+id:：消息 ID（可选，用于断线重连时，客户端会通过 Last-Event-ID 请求头告知服务端 “上次收到的最后一条消息 ID”，服务端可恢复推送）；
+retry:：重连间隔（可选，单位毫秒，告知客户端断线后多久重连）。
+服务端推送的 SSE 消息示例（文本流）：
+```plaintext
+event: price
+id: 123
+data: {"code": "AAPL", "price": 180.5}
+retry: 3000
+
+data: {"code": "MSFT", "price": 410.2}
+
+event: notice
+data: {"content": "股市休市提醒"}
+```
+4. 重连机制：手动实现 vs 原生支持
+- WebSocket：无内置重连功能。如果网络中断、服务端重启，连接会关闭（触发 onclose 事件），需要手动写重连逻辑（比如定时重试 new WebSocket()），还要处理重连后的状态恢复（如重新登录、同步数据）。
+- SSE：浏览器原生支持自动重连。当连接断开时（如网络波动），EventSource 会自动按照 retry 字段指定的间隔（默认 3 秒）重试连接，且重连时会在请求头带上 Last-Event-ID: xxx，服务端可根据这个 ID 继续推送未发送的消息，无需客户端额外处理。
+**开发与部署注意事项**
+1. WebSocket 的坑点
+- 需要处理「心跳检测」：WebSocket 连接长时间无数据传输时，可能被网关（如 Nginx）、防火墙断开，需定期发送心跳包（如客户端每 30 秒发 ping，服务端回复 pong）。
+- 跨域配置：WebSocket 跨域需要服务端设置 Access-Control-Allow-Origin 等响应头，且 new WebSocket() 初始化时需指定完整跨域 URL。
+二进制解析：传输二进制数据时，需处理 Blob 或 ArrayBuffer 解析，复杂度高于文本。
+2. SSE 的坑点
+- 仅支持 GET 请求：服务端只能通过 HTTP GET 建立 SSE 连接，无法用 POST（限制了客户端传大量参数，需通过 URL 或 Cookie 传递）。
+- 无二进制支持：如果需要推送图片、视频等二进制数据，SSE 无法实现，必须用 WebSocket。
+- IE 兼容性：IE 浏览器完全不支持 EventSource，需用 polyfill（如 eventsource-polyfill），但体验不如原生支持。
+
+**总结：怎么选？**
+| 需求场景                                 | 首选技术             | 核心原因                                                               |
+| ---------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
+| 需双向实时通信（如聊天、游戏、协作）     | WebSocket            | 唯一支持双向交互，灵活度高                                             |
+| 需推送二进制数据（如实时视频、文件分片） | WebSocket            | SSE 不支持二进制                                                       |
+| 仅需服务端单向推送（如行情、通知、日志） | SSE                  | 开发极简，原生支持重连，部署简单                                       |
+| 追求低开发成本，无需客户端回传数据       | SSE                  | 客户端一行代码初始化，服务端直接发文本流                               |
+| 需兼容 IE 浏览器                         | WebSocket + 降级方案 | SSE 对 IE 支持极差，WebSocket 可通过 Flash 降级（不推荐，建议放弃 IE） |
