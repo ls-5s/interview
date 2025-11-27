@@ -1414,3 +1414,237 @@ CDN 节点 = 全国各城市的快递中转站（提前缓存热门内容）；
 3. 边缘节点有缓存则直接返回内容，无缓存则回源站获取并缓存，后续同区域用户复用该缓存。
 
 本质：通过“就近节点+缓存复用”，跳过跨地域访问源站的环节，实现提速、减压。
+
+# 11.27
+## async/await
+**定义**
+async/await 是 JavaScript 中处理异步操作的语法糖，基于 Promise 实现，核心作用是让异步代码写起来、读起来像同步代码，解决了传统回调函数的 “回调地狱” 和 Promise.then() 链式调用的冗余问题，大幅提升代码可读性和可维护性。
+
+**一、先搞懂：它解决了什么问题？**
+1. 回调函数：回调地狱（Callback Hell）
+嵌套层级多，代码杂乱，难以调试：
+```javascript
+运行
+// 回调地狱：获取用户 -> 获取用户订单 -> 获取订单详情
+getUser(userId, (user) => {
+  getUserOrders(user.id, (orders) => {
+    getOrderDetail(orders[0].id, (detail) => {
+      console.log(detail); // 嵌套3层，多了更乱
+    }, (err) => console.error(err));
+  }, (err) => console.error(err));
+}, (err) => console.error(err));
+```
+2. Promise 链式调用：冗余且不直观
+虽然解决了回调地狱，但 then() 链过长时，代码依然不够简洁，逻辑分散：
+```javascript
+运行
+// Promise 链式调用
+getUser(userId)
+  .then(user => getUserOrders(user.id))
+  .then(orders => getOrderDetail(orders[0].id))
+  .then(detail => console.log(detail))
+  .catch(err => console.error(err));
+```
+3. async/await：同步化的异步代码
+用 async/await 改写后，代码线性执行，逻辑清晰，和同步代码几乎无差别：
+```javascript
+运行
+// async/await 写法
+async function getOrderInfo(userId) {
+  try {
+    const user = await getUser(userId); // 等待 Promise 完成，拿到结果
+    const orders = await getUserOrders(user.id);
+    const detail = await getOrderDetail(orders[0].id);
+    console.log(detail);
+    return detail;
+  } catch (err) {
+    console.error(err); // 统一捕获所有异步错误
+  }
+}
+```
+**二、核心用法：2 个关键字（async + await）**
+async/await 必须成对使用（await 不能脱离 async 函数单独存在），核心规则如下：
+1. async：标记异步函数
+用 async 修饰函数（普通函数、箭头函数均可），表示该函数是异步函数。
+异步函数的返回值会自动包装成 Promise：
+若函数内部 return 普通值（如数字、字符串），则返回 Promise.resolve(普通值)；
+若函数内部 throw 错误，则返回 Promise.reject(错误)；
+若直接返回 Promise，则直接返回该 Promise（不二次包装）。
+示例：
+```javascript
+运行
+// 普通函数
+async function fn1() {
+  return 123; // 等价于 return Promise.resolve(123)
+}
+fn1().then(res => console.log(res)); // 输出 123
+
+// 箭头函数
+const fn2 = async () => {
+  throw new Error("出错了"); // 等价于 return Promise.reject(new Error("出错了"))
+};
+fn2().catch(err => console.log(err.message)); // 输出 "出错了"
+
+// 返回 Promise
+async function fn3() {
+  return Promise.resolve("直接返回 Promise");
+}
+fn3().then(res => console.log(res)); // 输出 "直接返回 Promise"
+```
+2. await：等待异步结果
+await 只能用在 async 函数内部（或 ES2022 后的模块顶层），作用是等待一个 Promise 完成。
+执行到 await 时，函数会暂停执行（但不会阻塞主线程），直到 Promise 状态变为 fulfilled（成功）或 rejected（失败）：
+若 Promise 成功（fulfilled），await 会返回 Promise 的 resolve 值；
+若 Promise 失败（rejected），await 会抛出异常，需用 try/catch 捕获。
+示例：
+```javascript
+运行
+async function fetchData() {
+  try {
+    // 等待 fetch 异步请求完成（fetch 返回 Promise）
+    const response = await fetch("https://api.example.com/data");
+    const data = await response.json(); // 等待响应解析完成
+    console.log(data);
+  } catch (err) {
+    // 捕获 fetch 或 json() 抛出的所有错误
+    console.error("请求失败：", err);
+  }
+}
+```
+**三、关键特性：提升开发效率的核心点**
+1. 错误处理：统一捕获，更直观
+async/await 配合 try/catch，可以统一捕获所有 await 后的异步错误，比 Promise 链式调用的 catch() 更集中、更易维护（不用在每个 then() 后加错误处理）。
+2. 并行执行：避免串行等待（关键优化）
+如果多个异步操作互不依赖，直接用 await 串行执行会浪费时间（等前一个完成才执行下一个），此时需配合 Promise.all() 实现并行执行：
+示例：错误的串行（耗时 = 1s + 2s = 3s）：
+```javascript
+运行
+async function badParallel() {
+  const res1 = await delay(1000); // 1秒后完成
+  const res2 = await delay(2000); // 再等2秒（总共3秒）
+  console.log(res1, res2);
+}
+```
+示例：正确的并行（耗时 = 2s，取最长的异步操作时间）：
+```javascript
+运行
+async function goodParallel() {
+  // 先启动所有异步操作（并行），再等待所有完成
+  const promise1 = delay(1000);
+  const promise2 = delay(2000);
+  const [res1, res2] = await Promise.all([promise1, promise2]); // 总共2秒
+  console.log(res1, res2);
+}
+
+// 辅助函数：延迟ms后返回结果
+function delay(ms) {
+  return new Promise(resolve => setTimeout(() => resolve(`延迟${ms}ms`), ms));
+}
+```
+3. 条件执行：更灵活的逻辑控制
+相比 Promise 链式调用，async/await 可以轻松实现基于异步结果的条件判断，逻辑更自然：
+```javascript
+运行
+async function getInfo(userId) {
+  const user = await getUser(userId);
+  // 基于异步结果的条件判断
+  if (user.isVip) {
+    const vipInfo = await getVipInfo(user.id); // 仅VIP执行
+    return { ...user, ...vipInfo };
+  } else {
+    const normalInfo = await getNormalInfo(user.id); // 普通用户执行
+    return { ...user, ...normalInfo };
+  }
+}
+```
+**四、总结**
+async/await 的核心作用是 “用同步的语法写异步代码”，本质是 Promise 的语法糖，没有改变 JavaScript 异步非阻塞的本质，但解决了传统异步写法的痛点：
+- 替代回调地狱，让代码层级更扁平；
+- 替代冗长的 then() 链，让逻辑更线性、易读；
+- 用 try/catch 统一处理错误，更易维护；
+- 支持灵活的条件执行和并行优化。
+
+使用场景：所有需要处理异步操作的场景（网络请求、文件读写、数据库操作、定时器等），是目前 JavaScript 异步编程的首选方案。
+
+## setTimeout 和 setInterval 差别
+- 延迟 delay 毫秒后，仅执行1次回调	
+- 每隔 delay 毫秒，重复执行回调（循环触发）
+
+**二、代码示例：直观感受差异**
+1. setTimeout：延迟一次，执行后终止
+```javascript
+运行
+// 延迟2000毫秒（2秒）后，仅执行1次回调
+const timeoutId = setTimeout(() => {
+  console.log("setTimeout：延迟2秒，只执行1次");
+}, 2000);
+
+// 可选：如果需要取消（比如1秒后反悔，不让它执行）
+// setTimeout(() => {
+//   clearTimeout(timeoutId); // 传入定时器ID取消
+//   console.log("setTimeout被取消，未执行");
+// }, 1000);
+```
+2. setInterval：循环执行，需手动终止
+```javascript
+运行
+// 每隔1000毫秒（1秒），重复执行回调
+const intervalId = setInterval(() => {
+  console.log("setInterval：每隔1秒，重复执行");
+}, 1000);
+
+// 必须手动取消！否则会一直执行（比如5秒后停止）
+setTimeout(() => {
+  clearInterval(intervalId); // 传入定时器ID取消循环
+  console.log("setInterval被取消，停止执行");
+}, 5000);
+```
+// 输出结果：1秒打印1次，共打印4次后停止
+
+**三、关键坑点：为什么 setInterval 容易出问题？**
+setInterval 的最大痛点是 “间隔不精准，可能回调叠加”—— 它的逻辑是 “每隔 delay 毫秒触发一次回调”，而非 “前一次回调执行完后，再等 delay 毫秒触发”。
+比如：如果回调执行时间超过 delay（比如 delay=1000ms，但回调里有复杂操作耗时 1500ms），下一次回调会 “插队” 执行，导致两个回调叠加，占用过多资源。
+
+**setTimeout每次执行的时间一定是一样的吗？**
+1. 主线程被同步代码阻塞（最常见）
+```js
+// 设置延迟1000ms（1秒）执行
+console.log("开始时间：", new Date().getSeconds());
+setTimeout(() => {
+  console.log("setTimeout执行时间：", new Date().getSeconds()); // 实际延迟≈2秒
+}, 1000);
+
+// 主线程有2秒的同步阻塞代码（循环耗时）
+const start = Date.now();
+while (Date.now() - start < 2000) {} // 占用主线程2秒
+console.log("同步代码执行完：", new Date().getSeconds());
+```
+2. 事件队列排队等待
+setTimeout 的回调属于「宏任务」，会被加入宏任务队列。如果队列中还有其他宏任务（比如其他 setTimeout 回调、setInterval 回调、I/O 回调等），当前回调需要排队等待前面的宏任务执行完才能触发，进一步延迟执行时间。
+```js
+// 第一个宏任务：延迟0ms（理论上立即入队）
+setTimeout(() => {
+  console.log("第一个setTimeout");
+  // 回调内有耗时操作，阻塞宏任务队列
+  const start = Date.now();
+  while (Date.now() - start < 1000) {}
+}, 0);
+
+// 第二个宏任务：同样延迟0ms
+setTimeout(() => {
+  console.log("第二个setTimeout"); // 实际延迟≈1秒
+}, 0);
+```
+
+3. 浏览器 / 环境的最小延迟限制
+浏览器为了避免频繁触发回调导致性能问题，规定 setTimeout 的 delay 最小有效值为 4ms（HTML5 标准）。如果设置的 delay < 4ms，会被强制改为 4ms，导致实际延迟大于设置值。
+示例：
+```javascript
+运行
+// 设置延迟1ms（小于4ms）
+setTimeout(() => {
+  console.log("延迟1ms实际执行");
+}, 1);
+
+// 实际执行延迟≈4ms（浏览器环境下）
+```
