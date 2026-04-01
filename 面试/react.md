@@ -352,6 +352,184 @@ Vue3：基于 Proxy 精确追踪依赖，按需更新
 开发方式
 React：JSX，更灵活但偏工程化
 Vue3：template，更直观
+2. 开发范式与语法
+React：JSX 全 JS，UI 与逻辑合一，灵活度极高，更贴近原生 JS 思维。
+Vue3：Template 模板 + Script，分离结构与逻辑，语法更直观、上手更快。
 设计理念
 React：偏底层 + 生态驱动，适合复杂系统
 Vue3：提供完整方案，开发效率更高
+
+# 面试官：说说 Real DOM 和 Virtual DOM 的区别？优缺点？
+
+real DOM：真实 DOM，浏览器原生的 DOM API，通过 JS 操作，实现页面更新。
+virtual DOM：虚拟 DOM，React 创建的 JS 对象，通过 diff 算法对比新旧节点，只更新变化部分，最小化真实 DOM 操作，提升性能。
+
+👉 核心区别
+Real DOM
+直接操作浏览器 DOM
+修改成本高（会触发重排、重绘）
+Virtual DOM
+先在内存中计算（diff）
+最后批量更新真实 DOM
+
+👉 优缺点
+✅ Virtual DOM 优点
+减少真实 DOM 操作 → 提升性能
+批量更新 → 避免频繁重排重绘
+跨平台能力（如 React Native）
+❌ Virtual DOM 缺点
+有 diff 计算开销
+小规模更新时不一定比直接操作快
+✅ Real DOM 优点
+简单直接，无额外计算
+小操作性能更好
+❌ Real DOM 缺点
+频繁操作会导致性能问题
+不易维护复杂 UI
+🔥 加分一句（一定要说）
+
+Virtual DOM 的优势不在于“更快”，而在于在复杂场景下保持稳定性能和可维护性。
+
+# 重排、重绘
+
+1. 元素尺寸，位置，结果的变化，会导致浏览器重新计算布局，重新排列页面，
+触发条件，宽度，高度，增减DOM， 窗口变化
+2. 元素外观改变了，位置没有， 重新颜色，背景透明度等
+重排一定触发重绘重绘不一定触发重排
+重排成本 >> 重绘
+
+# 为何 dev 模式下 useEffect 执行两次？
+
+在 React 的 开发模式（StrictMode） 下，useEffect 执行两次，是刻意设计的行为，不是 bug。
+
+👉 目的有两个：
+
+检测副作用是否安全
+是否有未清理的副作用（比如定时器、订阅）
+模拟组件卸载 + 重新挂载
+执行流程是：
+👉 mount → effect → cleanup → 再 mount → effect
+
+✅ 本质一句话（面试金句🔥）
+
+React 通过“故意执行两次”来帮助开发者发现副作用问题，保证代码在未来并发渲染下是安全的。
+
+useEffect(() => {
+  let ignore = false;
+
+  fetch('/api/data').then(res => {
+    if (!ignore) {
+      setData(res);
+    }
+  });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
+
+# React 中的 key 有什么作用？
+
+✅ 1️⃣ Key 的作用
+React 中的 key 是用来标识列表中每个元素的唯一身份，主要作用：
+帮助 React 识别哪些元素被新增、删除或移动
+优化 diff 算法性能
+避免不必要的 DOM 删除和重建
+React 更新页面时，会对比 “旧列表” 和 “新列表”（这个对比过程叫 diff）。
+如果没有 key，React 只能从头到尾一个个对比，很慢。
+如果有 key，React 直接按身份证号匹配，一秒找到变化。
+保持组件状态
+比如列表中有 input 输入框，key 相同可以保留输入内容
+
+key 必须唯一且稳定
+不要用索引作为 key（除非列表不会改变顺序）
+key 是 React diff 的核心，直接影响渲染性能和状态保持
+
+# 说说对 React 中类组件和函数组件的理解？有什么区别？
+
+# 说说对受控组件和非受控组件的理解？应用场景？
+
+✅ 1️⃣ 定义
+受控组件（Controlled Component）
+表单元素的 值由 React state 控制
+每次用户输入都会触发 onChange 更新 state
+React 是“数据源”，DOM 只是视图
+function ControlledInput() {
+  const [value, setValue] = useState('');
+
+  return (
+    <input
+      value={value}
+      onChange={e => setValue(e.target.value)}
+    />
+  );
+}
+
+非受控组件（Uncontrolled Component）
+表单元素 自己维护值，React 不直接控制
+通过 ref 获取 DOM 值
+
+非受控组件（Uncontrolled Component）
+表单元素 自己维护值，React 不直接控制
+通过 ref 获取 DOM 值
+function UncontrolledInput() {
+  const inputRef = useRef();
+
+  const handleClick = () => {
+    console.log(inputRef.current.value);
+  };
+
+  return (
+    <>
+      <input ref={inputRef} />
+      <button onClick={handleClick}>提交</button>
+    </>
+  );
+}
+
+✅ 3️⃣ 应用场景
+受控组件
+需要实时校验或联动表单
+表单数据要统一提交/保存
+复杂表单（如动态增删项）
+非受控组件
+简单表单（只在提交时获取值）
+与第三方库整合（如文件上传 input）
+性能要求较高且无需频繁更新 UI
+
+# 说说对 React Hooks 的理解？解决了什么问题？
+
+副作用 = 组件渲染（UI = f (state)）之外的所有操作React 组件本身只负责一件事：
+根据 state 输出 UI只要不是「计算 UI」的操作，全都是副作用！
+✅ 纯函数（无副作用，组件本职工作）
+jsx
+// 只根据数据算UI → 纯渲染，无副作用
+function App() {
+  const [name] = useState("张三")
+  return <div>{name}</div>
+}
+拥有 state = 函数组件从「只能展示」变成「能存、能改、能更新」
+
+✅ 2️⃣ Hooks 解决的问题
+函数组件无法管理 state 和生命周期（类组件才有）
+类组件存在以下痛点：
+this 指向复杂，需要 bind
+生命周期函数零散，逻辑复用难
+高阶组件 / render props 写法复杂
+
+Hooks 解决：
+
+去掉 this
+. 直接去掉 this，永无指向问题
+Hooks 只用于函数组件，函数组件本身就没有 this！不用 bind、不用箭头函数绕弯，代码极简，永远不会报 this is undefined 错误。
+逻辑复用更简单（自定义 Hook）
+自定义 Hook：逻辑复用简单到极致
+想复用逻辑？直接封装一个自定义 Hook（以 use 开头的函数）：
+无嵌套、无冗余代码
+哪个组件要用，直接调用就行
+比高阶组件 /render props 简单 10 倍，可读性拉满
+函数式组件也可以完全替代类组件
+
+# . 说说你是如何提高组件的渲染效率的？在 React 中如何避免不必要的 render？
+
+简单说：React 默认是自上而下渲染，所以要控制不必要的渲染。
