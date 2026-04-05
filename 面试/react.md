@@ -1,535 +1,462 @@
-# React 父子组件生命周期调用顺序
+# 面试官：说说对 React 的理解？有哪些特性？
 
-👉 React 父子组件生命周期执行顺序：挂载时“先子后父提交”，更新时“先父 render 再子 render，提交阶段子先父后”，卸载时“子先于父卸载”。
+👉
+React 是由 Meta Platforms 开源的一个用于构建用户界面的 JavaScript 库，本质是一个声明式、组件化、以虚拟 DOM 为核心的 UI 渲染方案。
 
-【1️⃣ 挂载阶段（Mount）执行顺序】
+核心设计思想（面试官最想听的）
 
-以函数组件（Hooks）为主：
+1️⃣ 声明式编程（Declarative）
 
-🔹 Render 阶段（可打断）
-
-👉 执行顺序：父 → 子
-
-Parent render
-  ↓
-Child render
-🔹 Commit 阶段（不可打断）
-
-👉 执行顺序：子 → 父
-
-Child useEffect
-  ↓
-Parent useEffect
-✅ 最终顺序总结
-
-1. Parent render
-2. Child render
-3. Child useEffect
-4. Parent useEffect
-
-【2️⃣ 更新阶段（Update）执行顺序】
-🔹 Render 阶段
-
-👉 父 → 子（深度优先）
-
-Parent render
-  ↓
-Child render
-🔹 Commit 阶段
-
-👉 子 → 父
-
-Child useEffect cleanup
-Child useEffect
-Parent useEffect cleanup
-Parent useEffect
-✅ 完整顺序
-
-1. Parent render
-2. Child render
-3. Child cleanup
-4. Child effect
-5. Parent cleanup
-6. Parent effect
-
-【3️⃣ 卸载阶段（Unmount）】
-
-👉 子组件先卸载，再父组件
-
-Child cleanup
-  ↓
-Parent cleanup
-
-【4️⃣ 为什么是这种顺序（面试加分点🔥）】
-
-核心原因：👉 React Fiber 的深度优先遍历（DFS）+ 双阶段执行机制
-
-🔹 1. Fiber 遍历方式
-
-👉 React 使用 深度优先遍历（DFS）构建 Fiber 树
-
-Parent
-  └── Child
-
-Render 阶段：
-
-👉 从上到下（beginWork）
-👉 所以：父 → 子
-
-🔹 2. Commit 阶段
-
-👉 提交副作用时是“回溯阶段”（completeWork）
-
-👉 所以变成：
-
-Child → Parent
-🔹 3. 为什么 effect 子先执行？
-
-👉 因为 DOM 已经构建完成，React 在“回溯阶段”统一处理副作用
-
-👉 保证：
-
-子节点已经挂载
-父节点再处理副作用（更安全）
-因为 React 采用 深度优先遍历：先向下把所有子 DOM 全部挂载完成 → 再向上回溯执行 effect
-👉 子先执行 = 保证父执行 effect 时，子组件已经完全就绪（100% 安全）
-
-# React 组件通讯方式
-
-👉 React 组件通信本质是“单向数据流”，通过 props、回调函数、上下文（Context）以及外部状态管理来实现不同层级之间的数据传递。
-【1️⃣ 父 → 子通信（最基础）】
-
-👉 方式：props
-
-function Parent() {
-  return <Child msg="hello" />
-}
-
-function Child({ msg }) {
-  return <div>{msg}</div>
-}
-
-📌 特点：
-
-单向数据流（React 核心思想）
-最清晰、最推荐
-
-【2️⃣ 子 → 父通信】
-
-👉 方式：回调函数（函数作为 props）
-
-function Parent() {
-  const handle = (data) => {
-    console.log(data)
-  }
-
-  return <Child onSend={handle} />
-}
-
-function Child({ onSend }) {
-  return <button onClick={() => onSend('hello')} />
-}
-
-📌 本质：
-
-👉 父组件把控制权传给子组件
-
-【3️⃣ 兄弟组件通信】
-
-👉 方式：状态提升（Lifting State Up）
-
-Parent
- ├── ChildA
- └── ChildB
-
-👉 把共享状态放到父组件：
+👉 你只需要描述 UI “是什么”，而不是“怎么做”
 
 ```jsx
-// 引入React的useState钩子（代码中省略了导入语句，实际使用需要导入）
-import { useState } from 'react';
-
-/**
-
-* 父组件 Parent
-* 核心作用：统一管理共享状态，通过props向子组件传递状态和修改状态的方法
-* 设计模式：React 状态提升（将子组件需要共享的状态提升到父组件管理）
- */
-function Parent() {
-  // 1. 使用useState定义响应式状态
-  // value：状态变量，存储共享数据，初始值为空字符串
-  // setValue：修改状态的专用方法（React规定，必须通过该方法更新状态）
-  const [value, setValue] = useState('');
-
-  // 2. 组件返回的UI结构（JSX语法）
-  // <> </>：React片段，用于包裹多个子元素，不生成额外的DOM节点
-  return (
-    <>
-      {/*子组件A：接收父组件传递的 setValue 方法
-          作用：让子组件A拥有修改父组件状态的能力（触发状态更新）*/}
-      <ChildA setValue={setValue} />
-
-      {/* 子组件B：接收父组件传递的 value 状态
-          作用：让子组件B实时展示父组件的最新状态数据 */}
-      <ChildB value={value} />
-    </>
-  );
-}
+{isLogin ? <Home /> : <Login />}
 ```
 
+对比原生 JS：
+
+React：描述状态 → 自动更新 UI
+传统：手动操作 DOM
+
 📌 本质：
+UI = f(state)
+状态一变，React 自动执行 f，重新算出新 UI。
+2️⃣ 组件化（Component-Based）
 
-👉 通过“共同父组件”中转
+👉 把 UI 拆成一个个独立组件
 
-【4️⃣ 跨层级通信（重点🔥）】
-✅ 方式1：Context（React 内置）
+特点：
 
-👉 解决“props drilling（层层传递）”
+可复用
+易维护
+易组合
 
-const ThemeContext = createContext()
+📌 面试加分点：
 
-function App() {
-  return (
-    <ThemeContext.Provider value="dark">
-      <Child />
-    </ThemeContext.Provider>
-  )
-}
+高内聚、低耦合
+类似“函数式 UI”
 
-function Child() {
-  const theme = useContext(ThemeContext)
-}
+React 的组件化，就是把整个页面 UI，拆分成一个个独立、可复用、可组合的 “零件”，每个零件负责自己的样式、结构、逻辑，最后拼装成完整页面
 
-📌 适合：
+3️⃣ 单向数据流（One-way Data Flow）
 
-主题
-用户信息
-全局配置
+👉 数据从父组件流向子组件（props）
 
-【7️⃣ ref 通信（特殊场景🔥）】
+优点：
 
-👉 父直接操作子组件
+可预测
+易调试
+状态清晰
 
-const ref = useRef()
+📌 对比 Vue：
 
-<Child ref={ref} />
+React：单向数据流（更偏函数式）
+Vue：双向绑定（v-model）
 
-配合：
+4️⃣ 虚拟 DOM（Virtual DOM）
 
-useImperativeHandle(ref, () => ({
-  focus() {}
-}))
+👉 React 不直接操作真实 DOM，而是：
 
-📌 场景：
+流程：
 
-表单控制
-imperative 操作
+state 变化
+生成新的 Virtual DOM
+Diff 算法对比新旧
+最小化更新真实 DOM
 
-# state 和 props 有什么区别？
+📌 面试加分点：
 
-👉 props 是外部传入、只读的数据，state 是组件内部可变、可管理的数据；props 决定组件“怎么用”，state 决定组件“怎么实现”。
-【1️⃣ 本质区别（核心对比🔥）】
-
-| 维度         | props      | state    |
-| ------------ | ---------- | -------- |
-| 来源         | 父组件传入 | 组件内部 |
-| 是否可变     | ❌ 只读     | ✅ 可变   |
-| 控制权       | 父组件     | 当前组件 |
-| 作用         | 数据传递   | 状态管理 |
-| 是否触发更新 | ✅ 会       | ✅ 会     |
-
-【2️⃣ 数据流角度（面试重点🔥）】
-
-👉 React 是单向数据流
-
-Parent (state)
-   ↓ props
-Child
-✅ props：
-
-👉 是数据流的“载体”
-
-从父 → 子
-子不能修改（否则会破坏数据一致性）
-✅ state：
-
-👉 是数据流的“源头”
-
-数据的“拥有者”
-决定 UI 如何变化
-
-【3️⃣ 为什么 props 不能修改？（高频追问🔥）】
-
-👉 如果子组件能改 props：
-
-多个子组件 → 同时修改 → 数据混乱 ❌
-
-👉 React 设计：
-
-✔️ 数据只能由“拥有者”修改
-✔️ 保证可预测性（Predictable）
-
-【4️⃣ 使用场景区别】
-✅ props 适合：
-组件复用
-配置驱动 UI
-<Button type="primary" size="small" />
-✅ state 适合：
-用户交互
-UI 状态
-const [visible, setVisible] = useState(false)
-
-【5️⃣ 面试加分点（高级理解🔥）】
-🔹 1. state 可以“提升”为 props
-
-👉 状态提升（Lifting State Up）：
-
-子组件 state → 提到父组件 → 通过 props 传回
-
-👉 本质：
-
-👉 props 和 state 是可以相互转化的
-
-🔹 2. props + state 组合才是完整设计
-
-👉 一个组件：
-
-props → 外部输入
-state → 内部变化
-
-👉 类似：
-
-函数 = 输入 + 内部逻辑
-❓1：props 变化会触发更新吗？
-
-👉 会（触发重新 render）
-
-❓2：state 更新为什么是异步的？
-
-👉 为了批量更新 + 性能优化（Fiber 调度）
-批量合成：合并多次更新，避免重复渲染；
-主动执行：React 自主控制更新时机，而非被动等待 JS 异步；
-核心目的：性能优化，这就是 state 异步的底层逻辑。
-
-❓3：什么时候用 state，什么时候用 props？
-
-👉 答：
-
-是否需要内部维护 → state
-是否来自外部 → props
-
-# 面试官：说说React的事件机制？
-
-👉 React 事件机制本质是“合成事件系统 + 事件委托 + 优先级调度”，通过统一封装原生事件，实现跨浏览器一致性，并结合 Fiber 实现可控更新。
-
-# 是否用过 SSR 服务端渲染？
-
-# 面试官：React中的key有什么作用？
-
-# 面试官：说说对 React 的理解？有哪些特性？和vue3 的差别 ?
-
- react 是一个声明式，组件化的 UI 框架，基于虚拟 DOM 渲染，支持服务端渲染。
-声明式 ： 声明式：UI = f(state)，数据驱动视图 视图是状态的函数，数据驱动视图更新。
-组件化：提升了复用性和可维护性
-单线数据流：数据单向流动，避免数据混乱
-
-在实现上，React 有几个关键特性：
-
-Virtual DOM（虚拟 DOM）用 JS 对象模拟真实 DOM，通过 diff 算法对比新旧节点，只更新变化的部分，最小化真实 DOM 操作，大幅提升性能。
-Fiber 架构（React 16+ 核心）把渲染更新过程拆分成微小的可中断任务，实现时间分片。浏览器空闲时执行任务，避免 JS 长任务阻塞渲染，解决页面卡顿、掉帧问题。
-Hooks让函数组件可以拥有状态、副作用、逻辑复用能力，替代类组件，让代码更简洁、更易维护。
-
-和 Vue3 的核心区别是：
-
-👉 一句话总结：
-
-React 是“重新渲染”，Vue3 是“依赖追踪”
-
-展开三点：
-
-响应式机制
-React：setState 触发组件重新执行
-Vue3：基于 Proxy 精确追踪依赖，按需更新
-开发方式
-React：JSX，更灵活但偏工程化
-Vue3：template，更直观
-2. 开发范式与语法
-React：JSX 全 JS，UI 与逻辑合一，灵活度极高，更贴近原生 JS 思维。
-Vue3：Template 模板 + Script，分离结构与逻辑，语法更直观、上手更快。
-设计理念
-React：偏底层 + 生态驱动，适合复杂系统
-Vue3：提供完整方案，开发效率更高
+批量更新（batching）
+提升性能（减少重排重绘）
 
 # 面试官：说说 Real DOM 和 Virtual DOM 的区别？优缺点？
 
-real DOM：真实 DOM，浏览器原生的 DOM API，通过 JS 操作，实现页面更新。
-virtual DOM：虚拟 DOM，React 创建的 JS 对象，通过 diff 算法对比新旧节点，只更新变化部分，最小化真实 DOM 操作，提升性能。
+一、先一句话总述
+Real DOM（真实 DOM）：浏览器渲染的实际 DOM 节点树，操作它会触发重排重绘，性能开销大。
+Virtual DOM（虚拟 DOM）：用普通 JS 对象模拟 DOM 结构，是真实 DOM 的 “轻量级副本”，不直接操作浏览器。
 
-👉 核心区别
-Real DOM
-直接操作浏览器 DOM
-修改成本高（会触发重排、重绘）
-Virtual DOM
-先在内存中计算（diff）
-最后批量更新真实 DOM
+# state 和 props 区别？
 
-👉 优缺点
-✅ Virtual DOM 优点
-减少真实 DOM 操作 → 提升性能
-批量更新 → 避免频繁重排重绘
-跨平台能力（如 React Native）
-❌ Virtual DOM 缺点
-有 diff 计算开销
-小规模更新时不一定比直接操作快
-✅ Real DOM 优点
-简单直接，无额外计算
-小操作性能更好
-❌ Real DOM 缺点
-频繁操作会导致性能问题
-不易维护复杂 UI
-🔥 加分一句（一定要说）
+props 是组件外/ 父组件向子组件传递的数据， 使用组件之间的通信。
 
-Virtual DOM 的优势不在于“更快”，而在于在复杂场景下保持稳定性能和可维护性。
+state 是组件内部私有可变的数据， 是使用与组件内部的动态的自省交互。
 
-# 重排、重绘
+2️⃣ 是否可变（重点🔥）
+props
+❌ 只读（immutable）
+React 设计原则：单向数据流
+state
+✅ 可变（通过 setState / useState 更新）
+更新会触发重新渲染
 
-1. 元素尺寸，位置，结果的变化，会导致浏览器重新计算布局，重新排列页面，
-触发条件，宽度，高度，增减DOM， 窗口变化
-2. 元素外观改变了，位置没有， 重新颜色，背景透明度等
-重排一定触发重绘重绘不一定触发重排
-重排成本 >> 重绘
+👉 面试加分说法：
 
-# 为何 dev 模式下 useEffect 执行两次？
+props 不允许修改，是为了保证数据流的可预测性
 
-在 React 的 开发模式（StrictMode） 下，useEffect 执行两次，是刻意设计的行为，不是 bug。
+3️⃣ 是否影响组件更新
+props 改变
+✅ 会触发子组件重新渲染
+state 改变
+✅ 会触发当前组件重新渲染
 
-👉 目的有两个：
+👉 延伸：
 
-检测副作用是否安全
-是否有未清理的副作用（比如定时器、订阅）
-模拟组件卸载 + 重新挂载
-执行流程是：
-👉 mount → effect → cleanup → 再 mount → effect
+React 的本质是：状态驱动视图（State → View）
 
-✅ 本质一句话（面试金句🔥）
+4️⃣ 使用场景不同
+props
+组件复用
+父子通信
+配置组件行为
+state
+表单数据
+UI 状态（开关、loading）
+用户交互数据
 
-React 通过“故意执行两次”来帮助开发者发现副作用问题，保证代码在未来并发渲染下是安全的。
+1. 什么时候用 props vs state（面试官爱问）
 
-useEffect(() => {
-  let ignore = false;
+👉 判断标准：
 
-  fetch('/api/data').then(res => {
-    if (!ignore) {
-      setData(res);
-    }
-  });
+多个组件共享 → 用 props（或状态提升）
+组件自己用 → 用 state
 
-  return () => {
-    ignore = true;
-  };
-}, []);
+# setState 执行机制？
 
-# React 中的 key 有什么作用？
+在 React 中，setState 本质不是直接修改状态，而是提交一次状态更新请求，由 React 进行调度、批处理，并最终触发视图更新。
 
-✅ 1️⃣ Key 的作用
-React 中的 key 是用来标识列表中每个元素的唯一身份，主要作用：
-帮助 React 识别哪些元素被新增、删除或移动
-优化 diff 算法性能
-避免不必要的 DOM 删除和重建
-React 更新页面时，会对比 “旧列表” 和 “新列表”（这个对比过程叫 diff）。
-如果没有 key，React 只能从头到尾一个个对比，很慢。
-如果有 key，React 直接按身份证号匹配，一秒找到变化。
-保持组件状态
-比如列表中有 input 输入框，key 相同可以保留输入内容
+一、执行机制主线（必须讲流程🔥）
+1️⃣ 调用 setState
+setState({ count: 1 })
 
-key 必须唯一且稳定
-不要用索引作为 key（除非列表不会改变顺序）
-key 是 React diff 的核心，直接影响渲染性能和状态保持
+👉 React 不会立刻改 state
 
-# 说说对 React 中类组件和函数组件的理解？有什么区别？
+2️⃣ 生成 update 对象，进入更新队列
+每次 setState 都会创建一个 update
+挂到当前组件对应的 Fiber 的 updateQueue 上
 
-# 说说对受控组件和非受控组件的理解？应用场景？
+👉 关键点：
 
-✅ 1️⃣ 定义
-受控组件（Controlled Component）
-表单元素的 值由 React state 控制
-每次用户输入都会触发 onChange 更新 state
-React 是“数据源”，DOM 只是视图
-function ControlledInput() {
-  const [value, setValue] = useState('');
+state 是“算出来的”，不是“立刻改的”
+
+3️⃣ 调度（Scheduler）
+
+React 会决定：
+
+什么时候更新
+要不要合并更新（批处理）
+更新优先级（React 18）
+
+4️⃣ Render 阶段（可中断）
+根据最新 state 生成新的虚拟 DOM
+和旧的做 diff（协调）
+
+👉 特点：
+
+可以被打断（并发特性）
+
+5️⃣ Commit 阶段（不可中断）
+更新真实 DOM
+执行副作用（useEffect / 生命周期）
+
+二、为什么 setState 看起来是“异步”？（必问🔥）
+
+👉 本质原因：
+
+为了做批处理（Batching），减少重复渲染，提高性能
+
+✅ 举个经典例子
+setCount(count + 1)
+setCount(count + 1)
+
+👉 结果可能是：+1（不是 +2）
+
+原因：
+
+多次更新被合并
+闭包拿到旧值
+✅ 正确写法（函数式更新）
+setCount(prev => prev + 1)
+setCount(prev => prev + 1)
+
+👉 结果：+2
+
+四、什么时候是同步的？（再加一层）
+import { flushSync } from 'react-dom'
+
+flushSync(() => {
+  setCount(1)
+})
+
+👉 强制立即更新
+
+# React 事件机制？
+
+⭐ 一句话总起（先稳住）
+在 React 中，事件机制基于合成事件（SyntheticEvent）和事件委托实现，目的是统一浏览器行为并提升性能。
+
+一、什么是 React 事件机制（基础）
+
+React 并没有直接把事件绑在 DOM 上，而是做了一层封装：
+
+👉 合成事件（SyntheticEvent）
+
+特点：
+
+统一不同浏览器的事件行为（抹平差异）
+提供一致的 API（和原生事件类似）
+早期有事件池（React 17 已移除）一、什么是 React 事件机制（基础）
+
+React 并没有直接把事件绑在 DOM 上，而是做了一层封装：
+
+👉 合成事件（SyntheticEvent）
+
+特点：
+
+统一不同浏览器的事件行为（抹平差异）
+提供一致的 API（和原生事件类似）
+早期有事件池（React 17 已移除）
+
+# 面试官：React事件绑定的方式有哪些？区别？
+
+⭐ 一句话总起（先给结论）
+
+在 React 中，事件绑定主要有两种方式：JSX 合成事件绑定和原生 DOM 事件绑定（addEventListener），两者在实现机制、执行时机和使用场景上都有明显区别。
+
+1️⃣ JSX 方式（React 推荐）
+<button onClick={handleClick}>点击</button>
+
+👉 特点：
+
+使用 驼峰命名（onClick）
+绑定的是 函数引用（不是字符串）
+实际触发的是 SyntheticEvent（合成事件）
+底层是 事件委托
+2️⃣ 原生 DOM 方式
+button.addEventListener('click', handleClick)
+
+👉 特点：
+
+直接绑定在真实 DOM 上
+使用浏览器原生事件
+不走 React 事件系统
+
+1️⃣ 实现机制不同
+JSX 事件：
+基于 合成事件 + 事件委托
+统一绑定在 root 容器
+原生事件：
+直接绑定在 DOM 节点上
+
+执行顺序不同（高频🔥）
+
+👉 结论：
+
+原生事件先执行，React 合成事件后执行
+
+原因：
+
+React 是在事件冒泡到 root 后才处理
+
+3️⃣ 性能不同
+JSX 事件：
+✅ 事件委托 → 减少绑定数量 → 性能更好
+原生事件：
+❌ 每个节点都要绑定 → 成本更高
+
+5️⃣ 与 React 更新机制的关系（加分点🔥）
+JSX 事件：
+✅ 会触发 React 的更新调度（如 setState 批处理）
+原生事件：
+❌ 不在 React 体系内（早期不会自动批处理）
+
+三、使用场景（面试一定要说🔥）
+✅ 推荐用 JSX 事件
+组件内部交互
+表单、按钮点击
+大部分业务场景
+✅ 必须用原生事件
+操作非 React 管理的 DOM
+监听 window / document（如滚动、resize）
+与第三方库集成
+
+# 面试官：React中组件之间如何通信？
+
+⭐ 一句话总起（先定调）
+
+在 React 中，组件通信本质是数据在组件树中的流动，React 通过单向数据流来保证数据的可预测性。
+
+一、常见通信方式（按场景分类🔥）
+
+1️⃣ 父 → 子（最基础）
+
+👉 使用 props
+
+<Child name="张三" />
+
+👉 特点：
+
+单向数据流（只读）
+最常用方式
+
+2️⃣ 子 → 父
+
+👉 本质：通过函数回调
+
+<Child onChange={(value) => setValue(value)} />
+
+子组件：
+props.onChange('new value')
+👉 本质一句话：
+父组件把“修改权”通过函数传给子组件
+父组件把「修改数据的权限」封装成回调函数，通过 props 交给子组件，子组件调用函数完成通信。
+
+3️⃣ 兄弟组件通信
+
+👉 两种方式：
+
+✅ 方式一：状态提升（推荐）
+Parent（state）
+  ├── ChildA
+  └── ChildB
+
+👉 把共享状态放到父组件
+
+二、完整代码示例
+
+1. 父组件（中转站）
+
+```jsx
+import { useState } from 'react';
+import ChildA from './ChildA';
+import ChildB from './ChildB';
+
+function Parent() {
+  // 状态提升：把兄弟共享的数据存在父组件
+  const [msg, setMsg] = useState('默认消息');
 
   return (
-    <input
-      value={value}
-      onChange={e => setValue(e.target.value)}
-    />
+    <div>
+      {/*ChildA：传修改状态的函数（子→父） */}
+      <ChildA sendMsg={setMsg} />
+      {/* ChildB：传共享状态（父→子）*/}
+      <ChildB showMsg={msg} />
+    </div>
   );
 }
 
-非受控组件（Uncontrolled Component）
-表单元素 自己维护值，React 不直接控制
-通过 ref 获取 DOM 值
-
-非受控组件（Uncontrolled Component）
-表单元素 自己维护值，React 不直接控制
-通过 ref 获取 DOM 值
-function UncontrolledInput() {
-  const inputRef = useRef();
-
-  const handleClick = () => {
-    console.log(inputRef.current.value);
-  };
-
-  return (
-    <>
-      <input ref={inputRef} />
-      <button onClick={handleClick}>提交</button>
-    </>
-  );
-}
-
-✅ 3️⃣ 应用场景
-受控组件
-需要实时校验或联动表单
-表单数据要统一提交/保存
-复杂表单（如动态增删项）
-非受控组件
-简单表单（只在提交时获取值）
-与第三方库整合（如文件上传 input）
-性能要求较高且无需频繁更新 UI
-
-# 说说对 React Hooks 的理解？解决了什么问题？
-
-副作用 = 组件渲染（UI = f (state)）之外的所有操作React 组件本身只负责一件事：
-根据 state 输出 UI只要不是「计算 UI」的操作，全都是副作用！
-✅ 纯函数（无副作用，组件本职工作）
+export default Parent;
+2. ChildA（发送方）
 jsx
-// 只根据数据算UI → 纯渲染，无副作用
-function App() {
-  const [name] = useState("张三")
-  return <div>{name}</div>
+// 子组件调用函数，把数据传给父组件
+function ChildA({ sendMsg }) {
+  return (
+    <button onClick={() => sendMsg('来自兄弟A的数据')}>
+      给兄弟B发消息
+    </button>
+  );
 }
-拥有 state = 函数组件从「只能展示」变成「能存、能改、能更新」
 
-✅ 2️⃣ Hooks 解决的问题
-函数组件无法管理 state 和生命周期（类组件才有）
-类组件存在以下痛点：
-this 指向复杂，需要 bind
-生命周期函数零散，逻辑复用难
-高阶组件 / render props 写法复杂
+export default ChildA;
+3. ChildB（接收方）
+jsx
+// 子组件通过 props 接收父组件同步的数据
+function ChildB({ showMsg }) {
+  return <p>兄弟B接收：{showMsg}</p>;
+}
 
-Hooks 解决：
+export default ChildB;
+```
 
-去掉 this
-. 直接去掉 this，永无指向问题
-Hooks 只用于函数组件，函数组件本身就没有 this！不用 bind、不用箭头函数绕弯，代码极简，永远不会报 this is undefined 错误。
-逻辑复用更简单（自定义 Hook）
-自定义 Hook：逻辑复用简单到极致
-想复用逻辑？直接封装一个自定义 Hook（以 use 开头的函数）：
-无嵌套、无冗余代码
-哪个组件要用，直接调用就行
-比高阶组件 /render props 简单 10 倍，可读性拉满
-函数式组件也可以完全替代类组件
+兄弟不直接对话，找共同老爸中转；状态提升到父组件，父子通信实现兄弟互通。
 
-# . 说说你是如何提高组件的渲染效率的？在 React 中如何避免不必要的 render？
+5️⃣ 全局状态管理（复杂场景🔥）
 
-简单说：React 默认是自上而下渲染，所以要控制不必要的渲染。
+👉 常见方案：
+
+Redux
+Zustand
+MobX
+
+👉 适用于：
+
+多组件共享复杂状态
+大型项目
+
+4️⃣ 跨层级通信（避免 props drilling）
+
+👉 使用 Context
+
+const ThemeContext = React.createContext()
+
+👉 特点：
+
+跨多层传递数据
+避免层层传 props
+
+```jsx
+import React, { createContext, useContext, useState } from 'react';
+
+// 1. 创建上下文
+const CountContext = createContext();
+
+// 最底层：孙组件（直接拿数据）
+const Grandson = () => {
+  const { count, setCount } = useContext(CountContext);
+  return (
+    <div>
+      孙组件：{count} 
+      <button onClick={() => setCount(count+1)}>+1</button>
+    </div>
+  );
+};
+
+// 子组件（中间层，无props）
+const Child = () => <div><Grandson /></div>;
+
+// 父组件（中间层，无props）
+const Parent = () => <div><Child /></div>;
+
+// 顶层组件（提供数据）
+const App = () => {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <CountContext.Provider value={{ count, setCount }}>
+      <Parent />
+    </CountContext.Provider>
+  );
+};
+
+export default App;
+
+```
+
+Context 不推荐滥用的主要原因是它的更新是广播式的，当 Provider 的 value 发生变化时，所有消费该 Context 的组件都会重新渲染，即使它们没有使用变化的部分数据。
+
+本质上是因为 Context 无法做细粒度的依赖收集，只能基于 value 的引用是否变化来判断更新，因此容易引发性能问题。
+
+优化方式包括拆分 Context、使用 useMemo 缓存 value、以及结合 React.memo 等手段。
+
+一般来说，Context 更适合低频更新的全局数据，而复杂或高频状态更适合使用 Redux 或 Zustand 等状态管理方案。
+
+# 面试官：React中的key有什么作用？
+
+⭐ 一句话总起（先拿分）
+在 React 中，key 的作用是在虚拟 DOM diff 过程中唯一标识节点，从而帮助 React 更高效、准确地复用和更新 DOM。
+
+一、key 的核心作用（本质🔥）
+👉 React 在做 diff（协调）时：
+通过 key 判断“这个节点是不是同一个”
+✅ 没有 key 时
+
+React 只能：
+
+按顺序一一对比（index）
+容易误判节点变化
+✅ 有 key 时
+
+React 可以：
+
+精确找到对应节点
+复用已有 DOM
+只更新变化的部分
