@@ -323,3 +323,489 @@ DOM 事件
 读取文件
 
 用户点击
+
+# 面试官：说说JavaScript中的数据类型？存储上的差别？
+
+1️⃣ 基本数据类型（Primitive）
+Number
+String
+Boolean
+Null
+Undefined
+Symbol（ES6）
+BigInt（ES11）
+
+👉 特点：值不可变
+
+2️⃣ 引用数据类型（Reference）
+Object
+Array
+Function
+Date
+RegExp 等
+
+👉 特点：存的是引用（地址）
+1️⃣ 基本类型 —— 存在“栈内存（Stack）”
+
+特点：
+
+直接存储值
+占用空间小
+访问速度快
+let a = 10
+let b = a
+
+b = 20
+
+console.log(a) // 10
+
+👉 解释：
+
+a 和 b 是两个独立的值
+修改 b 不影响 a
+
+2️⃣ 引用类型 —— 存在“堆内存（Heap）”
+
+特点：
+
+实际数据存堆里
+变量中存的是内存地址（引用）
+let obj1 = { name: '张三' }
+let obj2 = obj1
+
+obj2.name = '李四'
+
+console.log(obj1.name) // 李四
+
+👉 解释：
+
+obj1 和 obj2 指向同一块内存
+修改其中一个，会影响另一个
+👉 基本类型存值在栈中，引用类型存地址指向堆中的对象
+
+# 面试官：谈谈this对象的理解&面试官：bind、call、apply 区别？如何实现一个bind?
+
+this 是 JavaScript 在函数执行时自动绑定的一个上下文对象，指向当前函数的调用者。
+
+👉 关键点就一句话：
+“this 指向谁，取决于函数如何被调用，而不是在哪里定义”
+
+👉 面试官最想听的就是这 4 条规则：
+
+1️⃣ 默认绑定（全局调用）
+function fn() {
+  console.log(this)
+}
+
+fn()
+
+👉 非严格模式：
+
+浏览器中 → window
+
+👉 严格模式：
+
+undefined
+
+2️⃣ 隐式绑定（对象调用）
+const obj = {
+  name: '张三',
+  fn() {
+    console.log(this.name)
+  }
+}
+
+obj.fn() // 张三
+
+👉 规则：
+
+👉 谁调用函数，this 就指向谁
+3️⃣ 显式绑定（call / apply / bind）
+function fn() {
+  console.log(this.name)
+}
+
+const obj = { name: '张三' }
+
+fn.call(obj)
+
+👉 this 被手动指定
+
+4️⃣ new 绑定（构造函数）
+function Person(name) {
+  this.name = name
+}
+
+const p = new Person('张三')
+
+👉 this 指向：
+
+👉 新创建的实例对象
+new 绑定 > 显式绑定 > 隐式绑定 > 默认绑定
+⚠️ 1️⃣ this 丢失
+const obj = {
+  name: '张三',
+  fn() {
+    console.log(this.name)
+  }
+}
+
+const f = obj.fn
+f() // undefined
+
+👉 原因：
+
+函数被“单独调用” → 变成默认绑定
+
+⚠️ 2️⃣ 箭头函数（重点🔥）
+const obj = {
+  name: '张三',
+  fn: () => {
+    console.log(this.name)
+  }
+}
+
+obj.fn() // undefined
+
+👉 规则：
+
+箭头函数没有自己的 this，继承外层作用域的 this
+
+call：立即执行 + 参数逐个传
+apply：立即执行 + 参数数组传
+bind：不执行，返回新函数
+function fn(a, b) {
+  console.log(this.name, a, b)
+}
+
+const obj = { name: '张三' }
+
+// call
+fn.call(obj, 1, 2)
+
+// apply
+fn.apply(obj, [1, 2])
+
+// bind
+const newFn = fn.bind(obj, 1, 2)
+newFn()
+call 和 apply 是立即执行函数，区别在于参数形式；bind 返回一个新函数，不会立即执行，并且可以实现参数预置，同时在实现时需要考虑 new 调用和原型链问题。
+
+# 面试官：说说你对闭包的理解？闭包使用场景 $ 面试官：说说 JavaScript 中内存泄漏的几种情况？
+
+👉 一句话翻译：
+
+👉 函数 + 它能访问的外部变量 = 闭包
+function outer() {
+  let count = 0
+
+  return function inner() {
+    count++
+    console.log(count)
+  }
+}
+
+const fn = outer()
+
+fn() // 1
+fn() // 2
+👉 为什么这是闭包？
+inner 用到了 outer 的变量 count
+outer 执行完本该销毁 ❗
+但 count 被保留下来了
+
+👉 原因：
+
+inner 持有对 outer 作用域的引用
+闭包的本质是：函数在执行时，会形成作用域链，并保留对外部变量的引用，从而导致这些变量不会被垃圾回收。
+1️⃣ 数据私有化（最常用🔥）
+function createCounter() {
+  let count = 0
+
+  return {
+    increment() {
+      count++
+    },
+    getCount() {
+      return count
+    }
+  }
+}
+
+👉 外部无法直接访问 count
+2️⃣ 防抖 / 节流（面试必提🔥）
+function debounce(fn, delay) {
+  let timer
+
+  return function () {
+    clearTimeout(timer)
+    timer = setTimeout(fn, delay)
+  }
+}
+
+👉 timer 被闭包保存
+
+3️⃣ 函数工厂 / 柯里化
+function add(a) {
+  return function (b) {
+    return a + b
+  }
+}
+1️⃣ 内存泄漏风险
+
+👉 因为变量不会被释放
+
+❗ 2️⃣ 不合理使用会占用内存
+
+👉 特别是：
+
+大对象
+DOM 引用
+内存泄漏是指不再使用的内存没有被及时释放，导致内存持续占用，最终可能引发性能下降甚至崩溃。
+🔥 1️⃣ 意外的全局变量
+function fn() {
+  a = 10 // ❌ 没有声明
+}
+
+👉 问题：
+
+挂到全局对象（浏览器是 window）
+生命周期 = 页面整个周期
+🔥 2️⃣ 闭包导致的内存泄漏
+function outer() {
+  let bigData = new Array(1000000)
+
+  return function () {
+    console.log(bigData)
+  }
+}
+
+👉 问题：
+
+bigData 一直被引用
+无法被垃圾回收
+
+👉 ⚠️ 注意：
+
+闭包本身不是问题，滥用才是问题
+🔥 3️⃣ 定时器未清除
+setInterval(() => {
+  console.log('running')
+}, 1000)
+
+👉 问题：
+
+一直执行
+引用一直存在
+
+👉 正确：
+
+clearInterval(timer)
+🔥 4️⃣ 事件监听未移除
+element.addEventListener('click', handler)
+
+👉 问题：
+
+DOM 被删除了
+事件还在 → 引用没断
+
+👉 正确：
+
+element.removeEventListener('click', handler)
+
+# 面试官：说说你对事件循环的理解
+
+# 面试官：深拷贝浅拷贝的区别？如何实现一个深拷贝？
+
+浅拷贝只复制对象的第一层属性，如果属性是引用类型，复制的是引用地址；
+深拷贝会递归复制所有层级，生成一个完全独立的新对象。
+
+# 类型转换 & ==/=== 区别
+
+一、先给核心定义（开场）
+
+JavaScript 是弱类型语言，在不同运算场景下会发生隐式或显式的类型转换。
+
+👉 两种方式：
+
+显式转换（主动）
+隐式转换（自动）
+二、显式类型转换（简单带过）
+✅ 常见方式
+Number('123')
+String(123)
+Boolean(0)
+
+👉 这部分不用讲太多，点到即可
+三、隐式类型转换（重点🔥🔥🔥）
+
+👉 面试官最想听的是这个
+🔥 1️⃣ 转 Boolean（哪些是假）
+
+👉 以下为 false：
+
+false
+0
+-0
+''
+null
+undefined
+NaN
+
+👉 其他都为 true
+🔥 1️⃣ + 运算符（最容易考）
+1 + '2' // "12"
+
+👉 规则：
+
+只要有字符串 → 转成字符串拼接
+
+1 + true // 2
+
+👉 true → 1
+🔥 1️⃣ + 运算符（最容易考）
+1 + '2' // "12"
+
+👉 规则：
+
+只要有字符串 → 转成字符串拼接
+
+1 + true // 2
+
+👉 true → 1
+🔥 2️⃣ 比较运算符（==）（经典坑🔥）
+'5' == 5 // true
+
+👉 规则：
+
+👉 字符串 → Number
+
+null == undefined // true
+
+👉 特殊规则（重点记）
+
+[] == 0 // true
+
+👉 过程：
+
+[] → '' → 0
+== 是抽象相等比较，会进行类型转换；
+=== 是严格相等比较，不会进行类型转换，要求类型和值都相同。
+
+# new 操作符原理 & 手写实现
+
+new 关键字主要用于调用构造函数，创建实例对象。其内部原理分为四步：
+创建一个全新的空对象；
+将该对象的原型链（__proto__）连接到构造函数的原型对象（prototype）；
+将构造函数内部的 this 绑定到这个新对象上，并执行函数体；
+如果构造函数显式返回一个引用类型（对象 / 函数），则返回该对象；否则默认返回新创建的对象。
+
+```js
+function mynew(Func,...args) {
+ const obj = {}
+ obj.__proto__ = Func.prototype
+ let res = Func.apply(obj,agrs)
+ return res instanceof Object ? res: obj
+}
+```
+
+# typeof & instanceof 区别
+
+一、typeof：基本类型判断，存在致命局限
+
+1. 核心作用
+用于判断基本数据类型，返回对应类型的字符串，共 8 种合法返回值：undefined、boolean、number、string、bigint、symbol、function、object
+2. 核心局限（面试必背）
+typeof 对null、所有引用类型的判断完全失效，统一返回object：
+js
+typeof null          // 'object'（JS历史遗留bug，null本质是原始值）
+typeof []             // 'object'（数组无法区分）
+typeof {}             // 'object'（普通对象）
+typeof new Date()     // 'object'（日期对象）
+typeof /abc/          // 'object'（正则对象）
+✅ 唯一例外：typeof function(){} // 'function'，能正确识别函数类型
+
+二、instanceof：引用类型判断，基于原型链查找
+
+1. 核心原理（面试必说）
+A instanceof B 的本质逻辑：沿着 A 的原型链（__proto__）向上遍历，看是否能找到 B 的prototype属性
+找到匹配项 → 返回true
+遍历到原型链顶端（null）仍未找到 → 返回false
+2. 核心特点
+仅能判断引用类型，对基本类型（如123 instanceof Number）直接返回false
+结果依赖原型链，若手动修改原型链，判断结果会发生变化
+
+```js
+console.log("======== 1. 基础引用类型判断 ========");
+const obj = {};
+const arr = [];
+const fn = function () {};
+
+// 沿着__proto__找对应构造函数的prototype
+console.log(obj instanceof Object); // true
+console.log(arr instanceof Array);  // true
+console.log(arr instanceof Object); // true（数组原型链最终指向 Object.prototype）
+console.log(fn instanceof Function); // true
+======== 1. 基础引用类型判断 ========
+true
+true
+true
+true
+```
+
+# 面试官：说说JavaScript中的事件模型
+
+1. 捕获阶段 (Capture Phase) 🔻
+方向：由外向内（Window → document → html → body → 父元素 → 目标元素）
+触发：通过 addEventListener 的第三个参数为 true 时触发。
+用途：最早拦截事件，常用于全局事件监听或阻止事件冒泡前的预处理。
+2. 目标阶段 (Target Phase) 🎯
+方向：到达真正触发事件的 DOM 节点（Target）。
+触发：无论是否捕获，此阶段都会执行。
+考点：event.target 是真正触发的元素，event.currentTarget 是当前绑定事件的元素。
+3. 冒泡阶段 (Bubbling Phase) 🔺
+方向：由内向外（目标元素 → 父元素 → ... → body → document → window）。
+触发：默认触发（第三个参数为 false 或不填）。
+考点：事件委托（Event Delegation）就是利用冒泡机制。
+二、事件委托（事件代理）🔥
+4. 核心原理
+「不给子元素绑定事件，给父元素绑定事件，利用冒泡机制统一处理。」因为事件会冒泡到父元素，父元素的事件处理函数可以通过 event.target 找到具体触发的子元素。
+5. 为什么要用？（应用场景）
+表格
+痛点 解决方案
+动态列表（新增 / 删除元素） 不用每次新增元素都重新绑定事件，父元素一直存在
+大量按钮 / 子元素（如 ul 下几十个 li） 减少 DOM 绑定次数，节省内存，提高性能
+复用逻辑 统一管理一类元素的事件逻辑
+6. 实战代码（面试必写）
+
+```js
+运行
+// 获取父元素
+document.getElementById('list').addEventListener('click', function (e) {
+  // 核心：判断触发的元素是否是我们想要的目标（如li）
+  // matches 匹配选择器，兼容性好
+  if (e.target && e.target.matches('li.item')) {
+    console.log('点击了列表项:', e.target.textContent)
+    // 执行具体业务逻辑
+  }
+})
+```
+
+1. 关键技巧
+e.target vs e.currentTarget：
+target：真正点击的那个元素（最底层）。
+currentTarget：绑定事件的那个元素（这里是 ul）。
+区分元素：使用 tagName、className 或 matches 来筛选子元素。
+
+# 面试官：解释下什么是事件代理？应用场景？
+
+不给子元素逐个绑定事件，而是将事件统一绑定到它们的父元素上，由父元素的事件处理函数统一处理所有子元素的事件。
+JS 的事件流包含「捕获→目标→冒泡」三个阶段，当子元素触发事件时，事件会沿着 DOM 树向上冒泡到所有父级元素。父元素可以通过两个关键属性识别并处理事件：
+event.target：事件的触发源，即真正被点击 / 操作的那个子元素（最底层 DOM 节点）
+event.currentTarget：事件的绑定者，即当前绑定事件的父元素
+父元素通过判断event.target的类型 / 标识，就能精准执行对应子元素的业务逻辑，完美替代子元素的独立绑定。
+表格
+直接绑定子元素 事件代理（绑定父元素）
+给 N 个子元素绑 N 次事件，内存占用高 只给父元素绑 1 次事件，大幅降低内存开销
+动态新增子元素需重新绑定，删除需解绑 子元素新增 / 删除无需操作，父元素监听永久生效
+事件逻辑分散在多个子元素，维护成本高 逻辑统一在父元素，代码简洁、便于维护

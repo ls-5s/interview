@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<body>
+    <!-- 父容器：事件绑定的根元素 -->
+    <ul id="list">
+        <!-- 普通列表项 -->
+        <li class="item">列表项1</li>
+        <!-- 嵌套子元素：测试 closest 兼容性 -->
+        <li class="item">
+            <span>列表项2（嵌套span）</span>
+        </li>
+        <li class="item">列表项3</li>
+    </ul>
+
+    <!-- 测试：动态添加元素 -->
+    <button id="addBtn">添加新列表项</button>
+
+    <script>
+        // 1. 获取父元素（唯一的事件绑定目标）
+        const list = document.getElementById('list')
+        const addBtn = document.getElementById('addBtn')
+
+        // 2. 事件代理核心：只给父元素绑定 1 次点击事件
+        list.addEventListener('click', function (e) {
+            // 3. 核心API：从点击目标向上查找最近的匹配元素
+            // 解决：点击嵌套子元素（span）无法匹配 li 的问题
+            const targetLi = e.target.closest('li.item')
+
+            // 4. 判断：如果找到匹配的 li，才执行业务逻辑
+            if (targetLi) {
+                console.log('点击了：', targetLi.textContent)
+                alert('你点击了：' + targetLi.textContent)
+            }
+        })
+
+        // 测试：动态添加元素（无需绑定事件，自动生效）
+        addBtn.addEventListener('click', function () {
+            const li = document.createElement('li')
+            li.className = 'item'
+            li.textContent = `动态添加项 ${Date.now()}`
+            list.appendChild(li)
+        })
+    </script>
+</body>
+
+</html>
