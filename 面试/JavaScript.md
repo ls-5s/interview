@@ -809,3 +809,206 @@ event.currentTarget：事件的绑定者，即当前绑定事件的父元素
 给 N 个子元素绑 N 次事件，内存占用高 只给父元素绑 1 次事件，大幅降低内存开销
 动态新增子元素需重新绑定，删除需解绑 子元素新增 / 删除无需操作，父元素监听永久生效
 事件逻辑分散在多个子元素，维护成本高 逻辑统一在父元素，代码简洁、便于维护
+
+# 数组的常用方法有哪些？
+
+✅ 1️⃣ 修改数组（变更数组内容）
+
+push()
+向数组的末尾添加一个或多个元素，并返回新数组的长度。
+
+```js
+let arr = [1, 2];
+arr.push(3); // [1, 2, 3]
+```
+
+pop()
+删除数组的最后一个元素，并返回被删除的元素。
+
+```js
+let arr = [1, 2, 3];
+arr.pop(); // 3, arr => [1, 2]
+```
+
+shift()
+删除数组的第一个元素，并返回被删除的元素。
+
+```js
+let arr = [1, 2, 3];
+arr.shift(); // 1, arr => [2, 3]
+```
+
+unshift()
+向数组的开头添加一个或多个元素，并返回新数组的长度。
+
+```js
+let arr = [1, 2];
+arr.unshift(0); // [0, 1, 2]
+```
+
+✅ 2️⃣ 查找与过滤（获取符合条件的元素）
+
+indexOf()
+返回指定元素在数组中首次出现的索引，没有找到则返回 -1。
+
+```js
+let arr = [1, 2, 3];
+arr.indexOf(2); // 1
+```
+
+includes()
+判断数组是否包含某个元素，返回 true 或 false。
+
+```js
+let arr = [1, 2, 3];
+arr.includes(2); // true
+```
+
+find()
+返回数组中第一个符合条件的元素，如果没有符合条件的元素，返回 undefined。
+
+```js
+let arr = [5, 12, 8, 130];
+arr.find(num => num > 10); // 12
+```
+
+findIndex()
+返回数组中第一个符合条件的元素的索引，如果没有符合条件的元素，返回 -1。
+
+```js
+let arr = [5, 12, 8, 130];
+arr.findIndex(num => num > 10); // 1
+```
+
+filter()
+返回一个新数组，包含所有符合条件的元素。
+
+```js
+let arr = [5, 12, 8, 130];
+arr.filter(num => num > 10); // [12, 130]
+```
+
+转换与合并（修改数组结构或合并）
+map()
+创建一个新数组，其中每个元素是原数组元素经过函数处理后的结果。
+
+```js
+let arr = [1, 2, 3];
+arr.map(num => num * 2); // [2, 4, 6]
+```
+
+reduce()
+对数组中的所有元素执行指定的操作，返回一个单一的值。
+
+```js
+let arr = [1, 2, 3];
+arr.reduce((acc, num) => acc + num, 0); // 6
+```
+
+reduceRight()
+类似于 reduce()，但是从数组的右端开始执行操作。
+
+```js
+let arr = [1, 2, 3];
+arr.reduceRight((acc, num) => acc + num, 0); // 6
+```
+
+concat()
+合并两个或多个数组，返回一个新数组。
+
+```js
+let arr1 = [1, 2];
+let arr2 = [3, 4];
+arr1.concat(arr2); // [1, 2, 3, 4]
+```
+
+✅ 4️⃣ 排序与排序（排序与反转）
+
+sort()
+对数组中的元素进行排序，默认为字母排序，如果需要按照数字排序，需要传入比较函数。
+
+```js
+let arr = [10, 2, 5, 1];
+arr.sort((a, b) => a - b); // [1, 2, 5, 10]
+```
+
+reverse()
+反转数组中元素的顺序。
+
+```js
+let arr = [1, 2, 3];
+arr.reverse(); // [3, 2, 1]
+```
+
+# 说说你对作用域链的理解 ?
+
+全局作用域
+任何不在函数中或是大括号中声明的变量，都是在全局作用域下，全局作用域下声明的变量可以在程序的任意位置访问
+
+```js
+// 全局变量
+var greeting = 'Hello World!';
+function greet() {
+  console.log(greeting);
+}
+// 打印 'Hello World!'
+greet();
+```
+
+<!-- # 函数作用域 -->
+
+函数作用域也叫局部作用域，如果一个变量是在函数内部声明的它就在一个函数作用域下面。这些变量只能在函数内部访问，不能在函数以外去访问
+
+```js
+function greet() {
+  var greeting = 'Hello World!';
+  console.log(greeting);
+}
+// 打印 'Hello World!'
+greet();
+// 报错： Uncaught ReferenceError: greeting is not defined
+console.log(greeting);
+```
+
+可见上述代码中在函数内部声明的变量或函数，在函数外部是无法访问的，这说明在函数内部定义的变量或者方法只是函数作用域
+
+<!-- # 块级作用域 -->
+
+ES6引入了let和const关键字,和var关键字不同，在大括号中使用let和const声明的变量存在于块级作用域中。在大括号之外不能访问这些变量
+
+```js
+{
+  // 块级作用域中的变量
+  let greeting = 'Hello World!';
+  var lang = 'English';
+  console.log(greeting); // Prints 'Hello World!'
+}
+// 变量 'English'
+console.log(lang);
+// 报错：Uncaught ReferenceError: greeting is not defined
+console.log(greeting);
+```
+
+三、作用域链
+当在Javascript中使用一个变量的时候，首先Javascript引擎会尝试在当前作用域下去寻找该变量，如果没找到，再到它的上层作用域寻找，以此类推直到找到该变量或是已经到了全局作用域
+
+如果在全局作用域里仍然找不到该变量，它就会在全局范围内隐式声明该变量(非严格模式下)或是直接报错
+
+这里拿《你不知道的Javascript(上)》中的一张图解释：
+
+把作用域比喻成一个建筑，这份建筑代表程序中的嵌套作用域链，第一层代表当前的执行作用域，顶层代表全局作用域
+
+变量的引用会顺着当前楼层进行查找，如果找不到，则会往上一层找，一旦到达顶层，查找的过程都会停止
+
+# 说说 new 操作符具体干了什么？
+
+```js
+function mynew(Func,...args) {
+  const obj = {}
+  obj.__proto__ = Func.prototype
+  let res = Func.apply(obj,args)
+  return res instanceof Object ? res : obj
+}
+```
+
+# 面试官：说说 Javascript 数字精度丢失的问题，如何解决？
