@@ -1012,3 +1012,566 @@ function mynew(Func,...args) {
 ```
 
 # 面试官：说说 Javascript 数字精度丢失的问题，如何解决？
+
+# 说说你对事件循环的理解 ？
+
+事件循环是 JavaScript 单线程非阻塞异步模型的核心机制，用来协调调用栈、任务队列、微任务与宏任务，让 JS 既能执行同步代码，又能处理异步操作不阻塞主线程。
+二、核心执行流程（必须讲清楚）
+
+整个流程可以总结为👇
+
+1️⃣ 同步代码进入 调用栈（Call Stack）执行
+
+2️⃣ 遇到异步任务（如 setTimeout / Promise / DOM 事件）：
+
+不会立即执行
+会交给浏览器 / Node 的异步环境处理
+
+3️⃣ 异步任务完成后，回调进入任务队列：
+
+宏任务队列（Macrotask Queue）
+微任务队列（Microtask Queue）
+
+4️⃣ Event Loop 开始调度：
+
+👉 执行顺序核心规则：
+同步 → 清空所有微任务 → 执行一个宏任务 → 再清空微任务 → 再执行一个宏任务 → …… 循环
+
+三、宏任务 vs 微任务（面试必问🔥）
+1️⃣ 宏任务（Macrotask）
+
+常见：
+
+setTimeout
+setInterval
+setImmediate（Node）
+I/O
+UI 渲染
+2️⃣ 微任务（Microtask）
+
+常见：
+
+Promise.then / catch / finally
+MutationObserver
+queueMicrotask
+
+```js
+<!DOCTYPE html>
+<body>
+  <button id="btn">点击触发DOM宏任务</button>
+
+  <script>
+    // ============== 同步代码（script 宏任务内部） ==============
+    console.log('1. 同步代码开始');
+
+    // 1. 微任务：queueMicrotask
+    queueMicrotask(() => {
+      console.log('2. 微任务 queueMicrotask');
+    });
+
+    // 2. 微任务：Promise.then / catch / finally
+    Promise.resolve()
+      .then(() => {
+        console.log('3. 微任务 Promise.then');
+      })
+      .catch(() => {})
+      .finally(() => {
+        console.log('4. 微任务 Promise.finally');
+      });
+
+    // 3. 微任务：async/await（本质 Promise 微任务）
+    async function asyncFn() {
+      console.log('5. async 函数内同步代码');
+      await Promise.resolve();
+      console.log('6. 微任务 async/await 后续');
+    }
+    asyncFn();
+
+    // ============== 宏任务 ==============
+    // 宏任务1：setTimeout
+    setTimeout(() => {
+      console.log('7. 宏任务 setTimeout');
+    }, 0);
+
+    // 宏任务2：fetch 网络请求
+    fetch('https://jsonplaceholder.typicode.com/todos/1')
+      .then(() => {
+        console.log('8. 宏任务 fetch 回调');
+      });
+
+    // 宏任务3：DOM 点击事件
+    document.getElementById('btn').addEventListener('click', () => {
+      console.log('9. 宏任务 DOM点击事件');
+    });
+
+    console.log('10. 同步代码结束');
+  </script>
+</body>
+</html>
+```
+
+# 说说 JavaScript 中的事件模型& 解释下什么是事件代理？应用场景？
+  
+👉 事件从触发到被处理，经历的完整流程。
+
+二、事件模型三大阶段（核心🔥）
+
+DOM 事件传播分为三个阶段：
+
+捕获阶段 → 目标阶段 → 冒泡阶段
+1️⃣ 捕获阶段（Capture Phase）
+
+👉 事件从 window → document → html → body → 目标元素
+
+从外到内
+默认不会触发（除非显式开启）
+2️⃣ 目标阶段（Target Phase）
+
+👉 事件到达目标元素本身
+
+触发绑定在目标上的事件
+3️⃣ 冒泡阶段（Bubbling Phase）🔥
+
+👉 事件从目标元素向外传播：
+
+目标 → 父元素 → body → html → document → window
+
+👉 默认事件处理都发生在冒泡阶段（重点！）
+
+```js
+三、代码示例（必须会讲🔥）
+<div id="parent">
+  <button id="child">点击</button>
+</div>
+parent.addEventListener('click', () => {
+  console.log('parent');
+});
+
+child.addEventListener('click', () => {
+  console.log('child');
+});
+
+👉 点击按钮输出：
+
+child
+parent
+
+👉 原因：
+
+默认是冒泡阶段
+子元素 → 父元素
+
+```
+
+四、如何控制事件阶段（面试必问🔥）
+addEventListener 第三个参数
+element.addEventListener(type, handler, useCapture);
+false（默认）👉 冒泡阶段
+true 👉 捕获阶段
+
+👉 示例：
+
+parent.addEventListener('click', () => {
+  console.log('parent capture');
+}, true);
+
+👉 输出顺序变为：
+
+parent capture
+child
+parent
+
+五、事件冒泡的应用 & 控制（高频🔥）
+1️⃣ 阻止冒泡
+event.stopPropagation();
+
+👉 常见场景：
+
+弹窗点击
+子组件不影响父组件
+2️⃣ 阻止默认行为
+event.preventDefault();
+
+👉 例如：
+
+阻止 <a> 跳转
+阻止表单提交
+
+六、事件委托（超级高频🔥）
+
+👉 本质：
+
+利用事件冒泡，把事件绑定到父元素上
+
+示例：
+ul.addEventListener('click', (e) => {
+  if (e.target.tagName === 'LI') {
+    console.log('点击了 li');
+  }
+});
+优点（一定要说！）
+减少事件绑定次数，避免大量循环绑定，提升页面性能
+支持动态新增元素，无需重新绑定事件
+降低内存占用，减少事件监听器数量，避免内存泄漏
+
+长列表点击（ul/li、表格行）商品列表、导航菜单、表格操作，只给父元素绑一次事件。
+动态新增元素（AJAX / 分页加载）异步加载、下拉刷新出来的新元素，不用重新绑定事件。
+多个相似按钮（删除 / 编辑 / 选中）同一区域内功能相同的按钮，统一委托父级处理。
+
+# 什么是防抖和节流？有什么区别？如何实现？
+
+```js
+高频触发事件时，延迟 n 秒后执行回调；若 n 秒内再次触发，清空定时器重新计时，最终只执行最后一次。
+2. 经典场景
+搜索框输入联想（输完停一下才发请求）
+窗口 resize、scroll 停止后执行
+按钮防重复点击
+3. 极简实现（面试背诵版）
+javascript
+运行
+function debounce(fn, delay) {
+  let timer = null;
+  return function(...args) {
+    // 再次触发，清除上一次定时器
+    clearTimeout(timer);
+    // 重新计时
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  }
+}
+1. 核心定义
+高频触发事件时，规定 n 秒内只执行一次回调，强制稀释事件触发频率，每隔一段时间执行一次。
+2. 经典场景
+滚动加载更多、滚动监听位置
+鼠标拖拽、mousemove 高频移动
+高频点击、游戏技能冷却
+3. 极简实现（时间戳版，面试首选）
+javascript
+运行
+function throttle(fn, interval) {
+  let last = 0; // 上次执行时间
+  return function(...args) {
+    const now = Date.now();
+    // 超过时间间隔才执行
+    if (now - last >= interval) {
+      fn.apply(this, args);
+      last = now;
+    }
+  }
+}
+
+```
+
+# DOM 常见的操作有哪些？
+
+查询节点
+创建节点
+插入节点
+删除 / 替换节点
+修改节点（属性 / 内容 / 样式）
+
+1. 查询节点
+
+```js
+document.getElementById('id')
+document.getElementsByClassName('class')
+document.getElementsByTagName('div')
+document.querySelector('.box')
+document.querySelectorAll('.item')
+```
+
+👉 querySelector vs getElementById
+
+querySelector：支持 CSS 选择器（更灵活）
+getElementById：性能更好（直接查找）
+
+1. 创建节点
+
+```js
+const div = document.createElement('div');
+const text = document.createTextNode('hello');
+div.appendChild(text);
+```
+
+插入节点
+
+```js
+parent.append(child)   // 父内部 → 最后
+parent.prepend(child)  // 父内部 → 最前
+child.before(node)     // 子前面 → 插入
+child.after(node)      // 子后面 → 插入
+```
+
+五、删除 / 替换节点
+
+```js
+parent.removeChild(child)
+child.remove()
+```
+
+1️⃣ 修改内容
+el.innerHTML = '<span>hello</span>'
+el.textContent = 'hello'
+
+# 说说你对 BOM 的理解，常见的 BOM 对象你了解哪些？
+
+BOM 是浏览器提供的一套操作浏览器窗口的 API，让 JavaScript 可以和浏览器本身进行交互。
+
+```js
+1️⃣ location（URL 操作必考🔥）
+
+👉 location
+
+👉 作用：操作当前 URL
+
+location.href        // 当前地址
+location.reload()    // 刷新页面
+location.assign('<https://xxx.com>') // 跳转
+
+👉 面试点：
+
+修改 href 会跳转页面
+常用于重定向
+```
+
+2️⃣ history（前进后退🔥）
+
+👉 history
+
+```js
+history.back()
+history.forward()
+history.go(-1)
+```
+
+👉 场景：
+
+SPA 路由控制（比如 React Router）
+4️⃣ screen（屏幕信息）
+
+```js
+👉 screen
+
+screen.width
+screen.height
+
+👉 场景：
+
+响应式布局判断
+```
+
+5️⃣ localStorage / sessionStorage（重点🔥）
+
+```js
+👉 localStorage
+👉 sessionStorage
+
+localStorage.setItem('key', 'value')
+localStorage.getItem('key')
+localStorage.removeItem('key')
+```
+
+# 如何判断一个元素是否在可视区域中？
+
+# 如何实现上拉加载，下拉刷新？
+
+# 说说 JavaScript 中内存泄漏的几种情况？
+
+内存泄漏（Memory Leak）：程序不再使用的内存没有被释放，导致浏览器占用越来越多，可能引起页面卡顿甚至崩溃。
+
+二、JavaScript 常见内存泄漏情况
+1️⃣ 全局变量泄漏（最经典🔥）
+未用 var/let/const 声明变量 → 自动成为全局变量
+全局对象引用一直存在
+function foo() {
+  bar = 1; // 未声明，隐式全局
+}
+
+2️⃣ 闭包导致的内存泄漏（面试必考🔥）
+闭包持有外部变量引用，导致内存不能释放
+function outer() {
+  const bigData = new Array(1000000).fill('*')
+  return function inner() {
+    console.log(bigData.length)
+  }
+}
+const fn = outer()  // bigData 不会被 GC
+3️⃣ 定时器 / 回调未清理
+**解决方案：**及时解除引用 fn = null
+setInterval、setTimeout、事件回调持续引用 DOM 或数据
+const el = document.getElementById('btn')
+setInterval(() => {
+  el.textContent = 'hello'
+}, 1000)
+
+**问题：**DOM 删除后，定时器依然持有引用 → 内存泄漏
+
+解决方案：clearInterval(timer) / removeEventListener
+
+# Javascript 本地存储的方式有哪些？区别及应用场景？
+
+常见 4 种👇
+
+Cookie
+localStorage
+sessionStorage
+IndexedDB
+1️⃣ Cookie（最早的存储方式）
+
+👉 特点：
+
+存储在浏览器中
+每次 HTTP 请求都会携带（关键点🔥）
+容量小（约 4KB）
+document.cookie = "name=xxx"
+
+👉 应用场景：
+
+登录态（Session / Token）
+用户身份认证
+
+👉 缺点：
+
+性能差（请求都会带）
+有安全风险（CSRF）
+
+2️⃣ localStorage（最常用🔥）
+
+👉 localStorage
+
+👉 特点：
+
+持久存储（不手动删就一直在）
+同源共享
+容量较大（5MB 左右）
+localStorage.setItem('key', 'value')
+localStorage.getItem('key')
+
+👉 应用场景：
+
+用户信息缓存
+主题（暗黑模式）
+前端缓存数据
+
+3️⃣ sessionStorage
+
+👉 sessionStorage
+
+👉 特点：
+
+会话级存储（关闭页面就没了）
+不同标签页不共享
+sessionStorage.setItem('key', 'value')
+
+👉 应用场景：
+
+表单临时数据
+页面状态（如多步骤流程）
+
+IndexedDB（高级🔥）
+
+👉 IndexedDB
+
+👉 特点：
+
+浏览器内置数据库（NoSQL）
+可存储大量数据（几十 MB+）
+支持索引、事务
+
+👉 应用场景：
+
+离线应用（PWA）
+大数据缓存（如图片、文件）
+本地数据库
+
+✅ 用 Cookie：
+需要和服务端通信
+比如登录态（但现在很多用 Token + Storage）
+✅ 用 localStorage：
+持久化数据
+不敏感数据缓存
+✅ 用 sessionStorage：
+临时状态（页面级）
+✅ 用 IndexedDB：
+大数据存储
+离线能力（PWA）
+
+# Javascript 中如何实现函数缓存？函数缓存有哪些应用场景？
+
+👉 函数缓存：把函数的计算结果缓存起来，下次相同输入直接返回缓存结果。
+
+👉 一句话总结：
+
+用空间换时间，避免重复计算
+
+```js
+function memoize(fn) {
+  const cache = { }
+  return function(...args) {
+    const key = JSON.stringify(args)
+    if(chache[key])
+    {
+      return cache[key]
+    }
+    const result = fn.apply(this, args)
+    cache[key] = result
+    return result
+   }
+
+}
+
+function add(a, b) {
+  console.log('执行计算...')
+  return a + b
+}
+
+const memoAdd = memoize(add)
+
+memoAdd(1, 2) // 计算
+memoAdd(1, 2) // 走缓存 ✅
+```
+
+四、函数缓存应用场景（重点🔥）
+1️⃣ 复杂计算（最经典）
+
+👉 比如：
+
+递归（斐波那契）
+大量数学计算
+const fib = memoize(function (n) {
+  if (n <= 1) return n
+  return fib(n - 1) + fib(n - 2)
+})
+2️⃣ 接口缓存（非常实用🔥）
+
+👉 相同请求直接返回缓存：
+
+const fetchCache = memoize(fetch)
+
+👉 场景：
+
+搜索建议
+数据查询
+4️⃣ 防止重复计算（表单 / UI）
+
+👉 比如：
+
+表单计算
+数据转换（格式化）
+5️⃣ 计算属性（Vue / 状态管理）
+
+👉 类似：
+
+Vue computed
+Redux selector（reselect）
+
+五、注意点（面试加分🔥）
+1️⃣ 内存泄漏风险
+
+👉 缓存不清理 → 内存越来越大
+
+3️⃣ 只适用于“纯函数”
+
+👉 必须：
+
+相同输入 → 相同输出
+无副作用
