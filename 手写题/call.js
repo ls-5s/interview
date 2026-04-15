@@ -1,4 +1,4 @@
-Function.prototype.myCall = function (context, ...args) {
+Function.prototype.myCall = function (context, args) {
   context = context === null ? window : Object(context);
   const fn = Symbol();
   context[fn] = this;
