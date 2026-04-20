@@ -1608,3 +1608,11 @@ function sum(arr, total = 0) {
   if (arr.length === 0) return total
   return sum(arr.slice(1), total + arr[0])
 }
+
+# function 和箭头函数的差别？
+
+this 指向不同普通函数的 this 动态指向调用者；箭头函数没有自己的 this，继承父级作用域的 this，且无法改变。
+能否作为构造函数普通函数可以用 new 创建实例；箭头函数不能 new，会直接报错。
+是否有 arguments普通函数内置 arguments 获取实参；箭头函数没有 arguments，需用 ...rest 替代。
+能否修改 this普通函数可通过 call/apply/bind 改变 this；箭头函数无视这些方法，this 始终不变。
+有无 prototype 原型普通函数有 prototype 原型；箭头函数没有原型对象。
