@@ -1,46 +1,286 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 
-<body>
-    <!-- 父容器：事件绑定的根元素 -->
-    <ul id="list">
-        <!-- 普通列表项 -->
-        <li class="item">列表项1</li>
-        <!-- 嵌套子元素：测试 closest 兼容性 -->
-        <li class="item">
-            <span>列表项2（嵌套span）</span>
-        </li>
-        <li class="item">列表项3</li>
-    </ul>
+<head>
+    <meta charset="UTF-8">
+    <title>极致炫酷登录体验</title>
+    <style>
+        :root {
+            --primary-color: #00f2ff;
+            --secondary-color: #0061ff;
+            --bg-dark: #080808;
+        }
 
-    <!-- 测试：动态添加元素 -->
-    <button id="addBtn">添加新列表项</button>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 动态背景光晕 */
+        .bg-animate {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000 100%);
+        }
+
+        .light-blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(var(--primary-color), var(--secondary-color));
+            filter: blur(150px);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: move 20s infinite alternate;
+        }
+
+        @keyframes move {
+            from {
+                transform: translate(-10%, -10%);
+            }
+
+            to {
+                transform: translate(20%, 20%);
+            }
+        }
+
+        /* 3D 卡片容器 */
+        .glass-card {
+            position: relative;
+            width: 400px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            transition: 0.5s;
+            overflow: hidden;
+        }
+
+        /* 顶部的流光线条 */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: skewX(-45deg);
+            pointer-events: none;
+            transition: 0.5s;
+        }
+
+        /* 炫酷流光边框动画 */
+        .border-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .border-line span {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, var(--primary-color));
+        }
+
+        .border-line span:nth-child(1) {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            animation: line1 2s linear infinite;
+        }
+
+        @keyframes line1 {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .border-line span:nth-child(2) {
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 100%;
+            animation: line2 2s linear infinite;
+            animation-delay: 1s;
+        }
+
+        @keyframes line2 {
+            0% {
+                top: -100%;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        /* 内容样式 */
+        h2 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .input-box {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-box input {
+            width: 100%;
+            padding: 10px 0;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #fff;
+            outline: none;
+            color: #fff;
+            font-size: 16px;
+            transition: 0.5s;
+        }
+
+        .input-box label {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            transition: 0.5s;
+        }
+
+        .input-box input:focus~label,
+        .input-box input:valid~label {
+            top: -15px;
+            color: var(--primary-color);
+            font-size: 12px;
+        }
+
+        /* 霓虹按钮 */
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--primary-color);
+            transition: 0.3s;
+        }
+
+        button:hover {
+            box-shadow: 0 0 30px var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .switch-btn {
+            margin-top: 20px;
+            text-align: center;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .switch-btn a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-animate">
+        <div class="light-blob"></div>
+    </div>
+
+    <div class="glass-card" id="card">
+        <div class="border-line">
+            <span></span><span></span>
+        </div>
+
+        <div id="auth-form">
+            <h2 id="form-title">LOGIN</h2>
+            <form onsubmit="event.preventDefault();">
+                <div class="input-box">
+                    <input type="text" required>
+                    <label>Username</label>
+                </div>
+                <div id="email-field" class="input-box" style="display: none;">
+                    <input type="email" id="email-input">
+                    <label>Email Address</label>
+                </div>
+                <div class="input-box">
+                    <input type="password" required>
+                    <label>Password</label>
+                </div>
+                <button type="submit" id="submit-btn">SIGN IN</button>
+                <div class="switch-btn">
+                    <span id="switch-text">Don't have an account? </span>
+                    <a href="#" onclick="toggleMode()" id="toggle-link">Sign Up</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
-        // 1. 获取父元素（唯一的事件绑定目标）
-        const list = document.getElementById('list')
-        const addBtn = document.getElementById('addBtn')
+        // 增加 3D 鼠标跟随效果
+        const card = document.getElementById('card');
+        document.addEventListener('mousemove', (e) => {
+            let xAxis = (window.innerWidth / 2 - e.pageX) / 20;
+            let yAxis = (window.innerHeight / 2 - e.pageY) / 20;
+            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
 
-        // 2. 事件代理核心：只给父元素绑定 1 次点击事件
-        list.addEventListener('click', function (e) {
-            // 3. 核心API：从点击目标向上查找最近的匹配元素
-            // 解决：点击嵌套子元素（span）无法匹配 li 的问题
-            const targetLi = e.target.closest('li.item')
+        // 切换登录/注册模式
+        let isLogin = true;
+        function toggleMode() {
+            isLogin = !isLogin;
+            const title = document.getElementById('form-title');
+            const emailField = document.getElementById('email-field');
+            const submitBtn = document.getElementById('submit-btn');
+            const switchText = document.getElementById('switch-text');
+            const toggleLink = document.getElementById('toggle-link');
 
-            // 4. 判断：如果找到匹配的 li，才执行业务逻辑
-            if (targetLi) {
-                console.log('点击了：', targetLi.textContent)
-                alert('你点击了：' + targetLi.textContent)
+            if (!isLogin) {
+                title.innerText = "REGISTER";
+                emailField.style.display = "block";
+                submitBtn.innerText = "SIGN UP";
+                switchText.innerText = "Already have an account? ";
+                toggleLink.innerText = "Login";
+            } else {
+                title.innerText = "LOGIN";
+                emailField.style.display = "none";
+                submitBtn.innerText = "SIGN IN";
+                switchText.innerText = "Don't have an account? ";
+                toggleLink.innerText = "Sign Up";
             }
-        })
-
-        // 测试：动态添加元素（无需绑定事件，自动生效）
-        addBtn.addEventListener('click', function () {
-            const li = document.createElement('li')
-            li.className = 'item'
-            li.textContent = `动态添加项 ${Date.now()}`
-            list.appendChild(li)
-        })
+        }
     </script>
 </body>
 

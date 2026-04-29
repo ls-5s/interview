@@ -1,14 +1,9 @@
-function sleep(time) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-async function light() {
-  while (true) {
-    console.log("红灯");
-    await sleep(1000);
-    console.log("绿灯");
-    await sleep(1000);
-    console.log("黄灯");
-    await sleep(1000);
+devServer: {
+  proxy: {
+    '/api': {
+      target: 'http://后端真实地址:端口', // 目标后端地址
+      changeOrigin: true, // 伪装请求来源
+      pathRewrite: { '^/api': '' } // 去掉请求路径里的/api
+    }
   }
 }
-light();

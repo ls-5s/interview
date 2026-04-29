@@ -347,7 +347,7 @@ const filterList = computed(() => list.value.filter(item => item.flag))
 </script>
 ```
 
-方案 2：外层包裹 <template> 做 v-if 判断
+<!-- 方案 2：外层包裹 <template> 做 v-if 判断 -->
 先判断整体条件，再执行循环，避免无效遍历
 
 ```vue
